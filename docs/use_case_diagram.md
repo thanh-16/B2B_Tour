@@ -7,16 +7,101 @@
 ## Sơ đồ tổng quan
 
 ```mermaid
-graph TB
-    subgraph Actors
+graph LR
+    %% Định nghĩa phong cách (styles) cho các Actors để làm nổi bật sơ đồ
+    classDef actorStyle fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef systemStyle fill:#bbf,stroke:#333,stroke-width:2px;
+    
+    %% Actors bên trái (Con người hệ thống)
+    subgraph LeftActors["👥 Tác nhân nội bộ"]
         PA["🔑 Platform Admin"]
         AM["🏢 Agency Manager"]
         AS["👤 Agency Staff"]
+    end
+
+    %% Actors bên phải (Hệ thống & Đối tác ngoài)
+    subgraph RightActors["⚙️ Hệ thống & Đối tác ngoài"]
         SA["📦 Supplier Admin"]
-        EXT["🚌 External Transport / Partner"]
+        EXT["🚌 External Transport"]
         SYS["⏰ System / Hangfire"]
         VNPAY["💳 VNPay Gateway"]
     end
+
+    %% Nhóm Use Case Auth & KYC
+    subgraph Module_Auth["🔐 Auth & KYC"]
+        UC04["UC-04: Đăng ký Đại lý"]
+        UC05["UC-05: Duyệt KYC"]
+        UC12["UC-12: Đình chỉ Đại lý"]
+    end
+
+    %% Nhóm Use Case Tìm kiếm & Markup
+    subgraph Module_Search["🔍 Search & Pricing"]
+        UC13["UC-13: Tìm dịch vụ"]
+        UC15["UC-15: Cập nhật Markup"]
+    end
+
+    %% Nhóm Use Case Đặt chỗ (Booking)
+    subgraph Module_Booking["📝 Booking Engine"]
+        UC16["UC-16: Giữ chỗ (Hold PNR)"]
+        UC17["UC-17: Thanh toán ví (Pay)"]
+        UC19["UC-19/20: Duyệt/Từ chối On-Request"]
+        UC21["UC-21: Auto-cancel đơn quá hạn"]
+    end
+
+    %% Nhóm Use Case Ví & Thanh toán
+    subgraph Module_Wallet["💰 Wallet & Payment"]
+        UC23["UC-23/24: Nạp/Trừ ví thủ công"]
+        UC25["UC-25: Tạo link nạp VNPay"]
+        UC26["UC-26: IPN Callback nạp ví"]
+    end
+
+    %% Nhóm Use Case Voucher & Vận chuyển
+    subgraph Module_Voucher["🎫 Voucher & Tích hợp"]
+        UC36["UC-36: Phát hành E-Voucher"]
+        UC37["UC-37: Gửi đặt chỗ sang đối tác"]
+        UC38["UC-38: Tải vé & Tự check-in"]
+    end
+
+    %% Nhóm Use Case Khiếu nại
+    subgraph Module_Claims["📢 After-Sales & Claims"]
+        UC39["UC-39: Tạo khiếu nại"]
+        UC42["UC-42: Duyệt khiếu nại"]
+    end
+
+    %% Kết nối phía Tác nhân nội bộ (Trái)
+    AM --> UC04
+    PA --> UC05
+    PA --> UC12
+
+    AS --> UC13
+    AM --> UC13
+    AM --> UC15
+
+    AS --> UC16
+    AM --> UC16
+    AS --> UC17
+    AM --> UC17
+
+    PA --> UC23
+    AS --> UC25
+    AM --> UC25
+
+    PA --> UC36
+    AS --> UC38
+    AM --> UC38
+
+    AS --> UC39
+    AM --> UC39
+    PA --> UC42
+
+    %% Kết nối phía Hệ thống & Đối tác ngoài (Phải)
+    SA --> UC19
+    SA --> UC37
+    SYS --> UC21
+    SYS --> UC37
+    VNPAY --> UC26
+    EXT --> UC37
+    EXT --> UC38
 ```
 
 ---
