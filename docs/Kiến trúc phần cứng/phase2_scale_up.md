@@ -23,23 +23,23 @@ graph TD
     %% TẦNG CLIENT
     %% ────────────────────────────────────────
     subgraph Clients["📱 Client Layer"]
-        App["📱 React Native App (iOS & Android)"]
-        Web["🖥️ Web Admin Portal (React)"]
+        App["📱 React Native App"]
+        Web["🖥️ Web Admin Portal"]
     end
 
     %% ────────────────────────────────────────
     %% TẦNG BẢO VỆ
     %% ────────────────────────────────────────
-    App -->|HTTPS| WAF["🛡️ Cloudflare Pro (WAF + DDoS + Rate Limit)"]
+    App -->|HTTPS| WAF["🛡️ Cloudflare Pro - WAF + DDoS"]
     Web -->|HTTPS| WAF
     WAF -->|Clean Traffic| LB["⚖️ Nginx Load Balancer"]
 
     %% ────────────────────────────────────────
     %% CỤM WEB API (Horizontal Scaling)
     %% ────────────────────────────────────────
-    subgraph AppCluster["🖥️ Application Cluster (Stateless)"]
-        API1["API Server 1 (ASP.NET Core)"]
-        API2["API Server 2 (ASP.NET Core)"]
+    subgraph AppCluster["🖥️ Application Cluster"]
+        API1["API Server 1 - ASP.NET Core"]
+        API2["API Server 2 - ASP.NET Core"]
     end
     LB -->|Round Robin| API1
     LB -->|Round Robin| API2
@@ -47,9 +47,9 @@ graph TD
     %% ────────────────────────────────────────
     %% DỊCH VỤ BỔ TRỢ (Tách riêng máy chủ)
     %% ────────────────────────────────────────
-    subgraph SupportLayer["⚡ Support Services (Tách riêng)"]
-        REDIS["⚡ Redis Server (Dedicated)"]
-        HF["⏰ Hangfire Worker (Dedicated Process)"]
+    subgraph SupportLayer["⚡ Support Services"]
+        REDIS["⚡ Redis Server"]
+        HF["⏰ Hangfire Worker"]
         FCM["🔔 Firebase FCM"]
     end
     API1 <-->|Session & Lock| REDIS
@@ -63,9 +63,9 @@ graph TD
     %% ────────────────────────────────────────
     %% CỤM DATABASE (Master-Replica)
     %% ────────────────────────────────────────
-    subgraph DBCluster["💾 Database Cluster (Replication)"]
-        DB_M["💾 PostgreSQL Master (Write Only)"]
-        DB_R["💾 PostgreSQL Replica (Read Only)"]
+    subgraph DBCluster["💾 Database Cluster"]
+        DB_M["💾 PostgreSQL Master - Write Only"]
+        DB_R["💾 PostgreSQL Replica - Read Only"]
     end
     API1 -->|Write| DB_M
     API2 -->|Write| DB_M
@@ -77,7 +77,7 @@ graph TD
     %% ────────────────────────────────────────
     %% LƯU TRỮ & ĐỐI TÁC
     %% ────────────────────────────────────────
-    STORAGE["📁 Object Storage (S3 / GCS)"]
+    STORAGE["📁 Object Storage - S3 / GCS"]
     API1 -->|File Upload/Download| STORAGE
     API2 -->|File Upload/Download| STORAGE
 
@@ -91,7 +91,7 @@ graph TD
     %% ────────────────────────────────────────
     %% GIÁM SÁT
     %% ────────────────────────────────────────
-    MONITOR["📊 Monitoring (Grafana + Prometheus)"]
+    MONITOR["📊 Monitoring - Grafana + Prometheus"]
     API1 -.->|Metrics| MONITOR
     API2 -.->|Metrics| MONITOR
     DB_M -.->|Metrics| MONITOR

@@ -13,24 +13,24 @@ graph TD
     %% ────────────────────────────────────────────────────
     %% TẦNG CLIENT (Người dùng cuối)
     %% ────────────────────────────────────────────────────
-    subgraph ClientLayer["📱 Client Layer (Ứng dụng người dùng)"]
-        MobileApp["📱 React Native Mobile App (iOS & Android)"]
-        WebAdmin["🖥️ Web Admin Portal (React / Next.js)"]
+    subgraph ClientLayer["📱 Client Layer"]
+        MobileApp["📱 React Native Mobile App"]
+        WebAdmin["🖥️ Web Admin Portal"]
     end
 
     %% ────────────────────────────────────────────────────
     %% TẦNG BẢO VỆ (Security Gateway)
     %% ────────────────────────────────────────────────────
-    MobileApp -->|HTTPS| WAF["🛡️ API Gateway / WAF (Cloudflare)"]
+    MobileApp -->|HTTPS| WAF["🛡️ API Gateway / WAF"]
     WebAdmin -->|HTTPS| WAF
-    WAF -->|Chặn DDoS, SQL Injection| LB["⚖️ Load Balancer (Nginx)"]
+    WAF -->|Chặn DDoS - SQL Injection| LB["⚖️ Load Balancer"]
 
     %% ────────────────────────────────────────────────────
     %% TẦNG ỨNG DỤNG (Application Layer)
     %% ────────────────────────────────────────────────────
-    subgraph AppServers["🖥️ Application Layer (Cụm Web API)"]
-        API1["Web API Server 1 (ASP.NET Core)"]
-        API2["Web API Server 2 (ASP.NET Core)"]
+    subgraph AppServers["🖥️ Application Layer"]
+        API1["Web API Server 1 - ASP.NET Core"]
+        API2["Web API Server 2 - ASP.NET Core"]
     end
     LB -->|Round Robin| API1
     LB -->|Round Robin| API2
@@ -39,49 +39,49 @@ graph TD
     %% TẦNG DỊCH VỤ BỔ TRỢ (Cache, Queue, Notification)
     %% ────────────────────────────────────────────────────
     subgraph SupportServices["⚡ Support Services Layer"]
-        REDIS["⚡ Redis (Cache & Distributed Lock)"]
-        HANGFIRE["⏰ Hangfire (Background Jobs)"]
-        FCM["🔔 Firebase Cloud Messaging (Push Notification)"]
+        REDIS["⚡ Redis - Cache & Lock"]
+        HANGFIRE["⏰ Hangfire - Background Jobs"]
+        FCM["🔔 Firebase Cloud Messaging"]
     end
     API1 <-->|Session & Lock| REDIS
     API2 <-->|Session & Lock| REDIS
     API1 -->|Enqueue Jobs| HANGFIRE
     API2 -->|Enqueue Jobs| HANGFIRE
-    API1 -->|Push thông báo| FCM
-    API2 -->|Push thông báo| FCM
+    API1 -->|Push Notification| FCM
+    API2 -->|Push Notification| FCM
     FCM -->|Notification| MobileApp
 
     %% ────────────────────────────────────────────────────
     %% TẦNG CƠ SỞ DỮ LIỆU (Database Layer)
     %% ────────────────────────────────────────────────────
-    subgraph DatabaseLayer["💾 Database Layer (Replication)"]
-        DB_Master["💾 PostgreSQL Master (Read/Write)"]
-        DB_Replica["💾 PostgreSQL Replica (Read Only)"]
+    subgraph DatabaseLayer["💾 Database Layer"]
+        DB_Master["💾 PostgreSQL Master - Read/Write"]
+        DB_Replica["💾 PostgreSQL Replica - Read Only"]
     end
-    API1 -->|Write (INSERT/UPDATE)| DB_Master
-    API2 -->|Write (INSERT/UPDATE)| DB_Master
-    API1 -->|Read (SELECT)| DB_Replica
-    API2 -->|Read (SELECT)| DB_Replica
+    API1 -->|Write| DB_Master
+    API2 -->|Write| DB_Master
+    API1 -->|Read| DB_Replica
+    API2 -->|Read| DB_Replica
     DB_Master -->|Streaming Replication| DB_Replica
     HANGFIRE -->|Job Store| DB_Master
 
     %% ────────────────────────────────────────────────────
     %% TẦNG LƯU TRỮ FILE (Object Storage)
     %% ────────────────────────────────────────────────────
-    STORAGE["📁 Object Storage (S3 / GCS)"]
-    API1 -->|Upload ảnh KYC, PDF Voucher| STORAGE
-    API2 -->|Upload ảnh KYC, PDF Voucher| STORAGE
+    STORAGE["📁 Object Storage - S3 / GCS"]
+    API1 -->|Upload File| STORAGE
+    API2 -->|Upload File| STORAGE
 
     %% ────────────────────────────────────────────────────
     %% HỆ THỐNG BÊN NGOÀI (External Partners)
     %% ────────────────────────────────────────────────────
     subgraph ExternalServices["🔌 External Services"]
         VNPAY["💳 VNPay Gateway"]
-        PARTNER["🚌 Partner APIs (Phương Trang, Hãng Bay)"]
+        PARTNER["🚌 Partner APIs"]
     end
-    API1 <-->|IPN Callback & Payment URL| VNPAY
-    API2 <-->|IPN Callback & Payment URL| VNPAY
-    HANGFIRE -->|Auto Sync đặt vé| PARTNER
+    API1 <-->|IPN Callback| VNPAY
+    API2 <-->|IPN Callback| VNPAY
+    HANGFIRE -->|Auto Sync| PARTNER
 ```
 
 ---

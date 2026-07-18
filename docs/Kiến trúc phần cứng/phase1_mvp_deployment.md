@@ -23,8 +23,8 @@ graph TD
     %% TẦNG CLIENT
     %% ────────────────────────────────────────
     subgraph Clients["📱 Client Layer"]
-        App["📱 React Native App (iOS & Android)"]
-        Web["🖥️ Web Admin Portal (React)"]
+        App["📱 React Native App"]
+        Web["🖥️ Web Admin Portal"]
     end
 
     %% ────────────────────────────────────────
@@ -33,23 +33,23 @@ graph TD
     App -->|HTTPS| NGINX
     Web -->|HTTPS| NGINX
 
-    subgraph VPS["☁️ VPS Cloud (1 máy chủ duy nhất — Docker Compose)"]
-        NGINX["⚖️ Nginx (Reverse Proxy + SSL)"]
+    subgraph VPS["☁️ VPS Cloud - Docker Compose"]
+        NGINX["⚖️ Nginx - Reverse Proxy + SSL"]
         
         subgraph AppContainer["🖥️ Application"]
-            API["ASP.NET Core Web API (1 instance)"]
+            API["ASP.NET Core Web API"]
         end
         NGINX -->|Forward Request| API
 
         subgraph DataServices["⚡ Data Services"]
-            REDIS["⚡ Redis (Cache & Lock)"]
-            PG["💾 PostgreSQL (Single Instance)"]
+            REDIS["⚡ Redis - Cache & Lock"]
+            PG["💾 PostgreSQL"]
         end
         API <-->|Cache & Distributed Lock| REDIS
         API -->|Read/Write| PG
 
         subgraph Worker["⏰ Background"]
-            HF["Hangfire (chạy chung process với API)"]
+            HF["Hangfire Worker"]
         end
         API --> HF
         HF -->|Job Store| PG
@@ -58,15 +58,15 @@ graph TD
     %% ────────────────────────────────────────
     %% DỊCH VỤ BÊN NGOÀI (SaaS MIỄN PHÍ)
     %% ────────────────────────────────────────
-    subgraph FreeSaaS["🔌 Dịch vụ SaaS miễn phí"]
-        CF["🛡️ Cloudflare Free (DNS + SSL + WAF cơ bản)"]
-        FCM["🔔 Firebase FCM (Push Notification)"]
-        S3["📁 Cloudinary Free (Lưu ảnh KYC)"]
+    subgraph FreeSaaS["🔌 Dịch vụ SaaS"]
+        CF["🛡️ Cloudflare Free"]
+        FCM["🔔 Firebase FCM"]
+        S3["📁 Cloudinary Free"]
         VNPAY["💳 VNPay Sandbox"]
     end
     CF -->|Proxy DNS| NGINX
     API -->|Push| FCM
-    API -->|Upload ảnh| S3
+    API -->|Upload| S3
     API <-->|IPN Callback| VNPAY
 ```
 
