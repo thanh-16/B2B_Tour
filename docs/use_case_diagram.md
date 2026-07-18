@@ -39,9 +39,9 @@ graph LR
     AM["🏢 Agency Manager"] --> UC4
     AM --> UC6
 
-    UC1 -.- |"Mọi Actor"| UC1
-    UC2 -.- |"Mọi Actor"| UC2
-    UC3 -.- |"Mọi Actor"| UC3
+    ALL["👥 Mọi Actor"] --> UC1
+    ALL --> UC2
+    ALL --> UC3
 ```
 
 | Use Case | Actor chính | Mô tả |
