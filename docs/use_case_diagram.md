@@ -8,100 +8,135 @@
 
 ```mermaid
 graph LR
-    %% Định nghĩa phong cách (styles) cho các Actors để làm nổi bật sơ đồ
-    classDef actorStyle fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef systemStyle fill:#bbf,stroke:#333,stroke-width:2px;
-    
-    %% Actors bên trái (Con người hệ thống)
-    subgraph LeftActors["👥 Tác nhân nội bộ"]
-        PA["🔑 Platform Admin"]
-        AM["🏢 Agency Manager"]
-        AS["👤 Agency Staff"]
+    %% ──────────────────────────────────────────────────────────
+    %% ĐỊNH NGHĨA ACTORS (TÁC NHÂN TỰ DO ĐỂ TỰ ĐỘNG CĂN BIÊN 2 BÊN)
+    %% ──────────────────────────────────────────────────────────
+    PA["🔑 Platform Admin"]
+    AM["🏢 Agency Manager"]
+    AS["👤 Agency Staff"]
+
+    SA["📦 Supplier Admin"]
+    EXT["🚌 External Transport"]
+    SYS["⏰ System / Hangfire"]
+    VNPAY["💳 VNPay Gateway"]
+
+    %% ──────────────────────────────────────────────────────────
+    %% RANH GIỚI HỆ THỐNG & CÁC USE CASE (KHÔNG SUBGRAPH CON ĐỂ GIẢM CHÉO DÂY)
+    %% ──────────────────────────────────────────────────────────
+    subgraph B2B_System["🏗 RANH GIỚI HỆ THỐNG B2B TRAVEL PLATFORM"]
+        %% 1. Xác thực & KYC đại lý
+        UC_Login["UC-01: Đăng nhập & Cấp Token"]
+        UC_Register["UC-04: Đăng ký đại lý mới"]
+        UC_KYC_Approve["UC-10: Phê duyệt KYC đại lý"]
+        UC_KYC_Reject["UC-11: Từ chối KYC đại lý"]
+        UC_Suspend["UC-12: Đình chỉ đại lý vi phạm"]
+
+        %% 2. Tìm kiếm & Cấu hình Markup
+        UC_Search["UC-13: Tìm kiếm dịch vụ sỉ"]
+        UC_Markup_View["UC-14: Xem Markup đại lý"]
+        UC_Markup_Update["UC-15: Cập nhật tỷ lệ Markup"]
+
+        %% 3. Đặt chỗ (Booking Engine)
+        UC_Hold["UC-16: Giữ chỗ tạm thời (Hold PNR)"]
+        UC_Pay["UC-17: Thanh toán đơn bằng ví (Pay)"]
+        UC_View_Book["UC-18: Xem tất cả đơn đặt chỗ"]
+        UC_Approve_Req["UC-19/20: Duyệt/Từ chối đơn On-Request"]
+        UC_Autocancel["UC-21: Tự động hủy đơn HELD quá hạn"]
+
+        %% 4. Ví tài chính & Thanh toán
+        UC_Wallet_View["UC-22: Xem số dư ví & Hạn mức"]
+        UC_Adj_Wallet["UC-23/24: Nạp/Trừ số dư ví thủ công"]
+        UC_VNPay_Url["UC-25: Tạo link nạp ví VNPay"]
+        UC_VNPay_IPN["UC-26: Xử lý IPN Callback nạp tiền"]
+
+        %% 5. Quản lý Kho dịch vụ
+        UC_Inv_View["UC-27: Xem danh sách dịch vụ sỉ"]
+        UC_Inv_Create["UC-28: Tạo sản phẩm dịch vụ mới"]
+        UC_Inv_Update["UC-30: Cập nhật slot chỗ trống/giá"]
+        UC_Inv_Stop["UC-31: Ngừng bán sản phẩm dịch vụ"]
+
+        %% 6. Voucher & Tích hợp vận chuyển đối tác
+        UC_Vou_Issue["UC-36: Phát hành E-Voucher / Vé"]
+        UC_Vou_Sync["UC-37: Gọi API đặt chỗ sang đối tác"]
+        UC_Vou_Download["UC-38: Tải vé & Tự check-in"]
+
+        %% 7. Khiếu nại (Claims)
+        UC_Claim_Create["UC-39: Tạo yêu cầu khiếu nại hoàn/hủy"]
+        UC_Claim_Resolve["UC-42/43: Duyệt/Từ chối khiếu nại"]
+
+        %% 8. Báo cáo & Cấu hình sàn
+        UC_Rep_Dash["UC-47: Xem Dashboard báo cáo doanh thu"]
+        UC_Rep_Ledger["UC-49: Xem lịch sử giao dịch Ledger"]
+        UC_Sys_Config["UC-52: Cập nhật cấu hình toàn sàn"]
+
+        %% 9. Hệ thống Thông báo
+        UC_Noti_View["UC-44: Xem danh sách thông báo"]
+        UC_Noti_Read["UC-45/46: Đánh dấu thông báo đã đọc"]
     end
 
-    %% Actors bên phải (Hệ thống & Đối tác ngoài)
-    subgraph RightActors["⚙️ Hệ thống & Đối tác ngoài"]
-        SA["📦 Supplier Admin"]
-        EXT["🚌 External Transport"]
-        SYS["⏰ System / Hangfire"]
-        VNPAY["💳 VNPay Gateway"]
-    end
+    %% ──────────────────────────────────────────────────────────
+    %% ĐƯỜNG KẾT NỐI (RELATIONSHIPS)
+    %% ──────────────────────────────────────────────────────────
 
-    %% Nhóm Use Case Auth & KYC
-    subgraph Module_Auth["🔐 Auth & KYC"]
-        UC04["UC-04: Đăng ký Đại lý"]
-        UC05["UC-05: Duyệt KYC"]
-        UC12["UC-12: Đình chỉ Đại lý"]
-    end
+    %% 1. Tác nhân nội bộ (Đặt ở bên trái sơ đồ)
+    PA --> UC_KYC_Approve
+    PA --> UC_KYC_Reject
+    PA --> UC_Suspend
+    PA --> UC_View_Book
+    PA --> UC_Adj_Wallet
+    PA --> UC_Inv_View
+    PA --> UC_Vou_Issue
+    PA --> UC_Claim_Resolve
+    PA --> UC_Rep_Dash
+    PA --> UC_Rep_Ledger
+    PA --> UC_Sys_Config
+    PA --> UC_Login
+    PA --> UC_Noti_View
+    PA --> UC_Noti_Read
 
-    %% Nhóm Use Case Tìm kiếm & Markup
-    subgraph Module_Search["🔍 Search & Pricing"]
-        UC13["UC-13: Tìm dịch vụ"]
-        UC15["UC-15: Cập nhật Markup"]
-    end
+    AM --> UC_Register
+    AM --> UC_Markup_Update
+    AM --> UC_Search
+    AM --> UC_Markup_View
+    AM --> UC_Hold
+    AM --> UC_Pay
+    AM --> UC_Wallet_View
+    AM --> UC_VNPay_Url
+    AM --> UC_Vou_Download
+    AM --> UC_Claim_Create
+    AM --> UC_Login
+    AM --> UC_Noti_View
+    AM --> UC_Noti_Read
 
-    %% Nhóm Use Case Đặt chỗ (Booking)
-    subgraph Module_Booking["📝 Booking Engine"]
-        UC16["UC-16: Giữ chỗ (Hold PNR)"]
-        UC17["UC-17: Thanh toán ví (Pay)"]
-        UC19["UC-19/20: Duyệt/Từ chối On-Request"]
-        UC21["UC-21: Auto-cancel đơn quá hạn"]
-    end
+    AS --> UC_Search
+    AS --> UC_Markup_View
+    AS --> UC_Hold
+    AS --> UC_Pay
+    AS --> UC_Wallet_View
+    AS --> UC_VNPay_Url
+    AS --> UC_Vou_Download
+    AS --> UC_Claim_Create
+    AS --> UC_Login
+    AS --> UC_Noti_View
+    AS --> UC_Noti_Read
 
-    %% Nhóm Use Case Ví & Thanh toán
-    subgraph Module_Wallet["💰 Wallet & Payment"]
-        UC23["UC-23/24: Nạp/Trừ ví thủ công"]
-        UC25["UC-25: Tạo link nạp VNPay"]
-        UC26["UC-26: IPN Callback nạp ví"]
-    end
+    %% 2. Tác nhân ngoài & Hệ thống (Đặt ở bên phải sơ đồ)
+    SA --> UC_Inv_View
+    SA --> UC_Inv_Create
+    SA --> UC_Inv_Update
+    SA --> UC_Inv_Stop
+    SA --> UC_Approve_Req
+    SA --> UC_Login
+    SA --> UC_Noti_View
+    SA --> UC_Noti_Read
 
-    %% Nhóm Use Case Voucher & Vận chuyển
-    subgraph Module_Voucher["🎫 Voucher & Tích hợp"]
-        UC36["UC-36: Phát hành E-Voucher"]
-        UC37["UC-37: Gửi đặt chỗ sang đối tác"]
-        UC38["UC-38: Tải vé & Tự check-in"]
-    end
+    SYS --> UC_Autocancel
+    SYS --> UC_Vou_Sync
 
-    %% Nhóm Use Case Khiếu nại
-    subgraph Module_Claims["📢 After-Sales & Claims"]
-        UC39["UC-39: Tạo khiếu nại"]
-        UC42["UC-42: Duyệt khiếu nại"]
-    end
+    VNPAY --> UC_VNPay_IPN
 
-    %% Kết nối phía Tác nhân nội bộ (Trái)
-    AM --> UC04
-    PA --> UC05
-    PA --> UC12
-
-    AS --> UC13
-    AM --> UC13
-    AM --> UC15
-
-    AS --> UC16
-    AM --> UC16
-    AS --> UC17
-    AM --> UC17
-
-    PA --> UC23
-    AS --> UC25
-    AM --> UC25
-
-    PA --> UC36
-    AS --> UC38
-    AM --> UC38
-
-    AS --> UC39
-    AM --> UC39
-    PA --> UC42
-
-    %% Kết nối phía Hệ thống & Đối tác ngoài (Phải)
-    SA --> UC19
-    SA --> UC37
-    SYS --> UC21
-    SYS --> UC37
-    VNPAY --> UC26
-    EXT --> UC37
-    EXT --> UC38
+    EXT --> UC_Vou_Sync
+    EXT --> UC_Vou_Download
 ```
 
 ---
