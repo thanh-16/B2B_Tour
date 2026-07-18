@@ -41,12 +41,12 @@ graph TB
         AM["🏢 Agency Manager"]
         AS["👤 Agency Staff"]
         SA["📦 Supplier Admin"]
-        DS["🚗 Delivery Staff"]
     end
 
-    subgraph System["⚙️ Actor Hệ Thống"]
+    subgraph System["⚙️ Actor Hệ Thống & Đối Tác"]
         SYS["⏰ System / Hangfire"]
         VNPAY["💳 VNPay Gateway"]
+        EXT["🚌 External Transport"]
     end
 ```
 
@@ -55,9 +55,9 @@ graph TB
 | 1 | **Platform Admin** | Con người | Quản trị viên cấp cao nhất, toàn quyền quản lý hệ thống |
 | 2 | **Agency Manager** | Con người | Chủ / Quản lý đại lý du lịch |
 | 3 | **Agency Staff** | Con người | Nhân viên bán hàng tại đại lý |
-| 4 | **Supplier Admin** | Con người | Quản trị viên nhà cung cấp dịch vụ (khách sạn, tour, vận chuyển) |
-| 5 | **Delivery Staff (Driver)** | Con người | Tài xế / Hướng dẫn viên bàn giao dịch vụ cho khách cuối |
-| 6 | **System / Hangfire** | Hệ thống | Tác vụ nền chạy tự động (auto-cancel, key rotation, nhắc KYC) |
+| 4 | **Supplier Admin** | Con người | Quản trị viên nhà cung cấp dịch vụ (khách sạn, tour...) |
+| 5 | **External Transport** | Bên ngoài | Đối tác vận chuyển (nhà xe Phương Trang, hãng bay) kết nối qua API |
+| 6 | **System / Hangfire** | Hệ thống | Tác vụ nền chạy tự động (auto-cancel, đồng bộ đặt vé đối tác, nhắc KYC) |
 | 7 | **VNPay Gateway** | Bên ngoài | Cổng thanh toán — gọi IPN callback khi nạp tiền thành công |
 
 ---
@@ -77,16 +77,15 @@ graph TB
 | 1 | Duyệt KYC đại lý | KYC | Phê duyệt hoặc từ chối hồ sơ KYC của đại lý mới đăng ký |
 | 2 | Đình chỉ đại lý | KYC | Đình chỉ hoạt động đại lý vi phạm chính sách |
 | 3 | Xem danh sách đại lý | KYC | Xem toàn bộ đại lý, lọc theo trạng thái KYC |
-| 4 | Onboard tài xế | Auth | Tạo tài khoản tài xế mới cho đại lý |
-| 5 | Nạp tiền ví đại lý | Wallet | Nạp tiền (Credit) vào ví đại lý sau khi xác nhận chuyển khoản |
-| 6 | Trừ tiền ví đại lý | Wallet | Điều chỉnh thủ công số dư ví (kèm audit log) |
-| 7 | Xem tất cả booking | Booking | Xem toàn bộ đơn đặt chỗ trên hệ thống |
-| 8 | Quản lý kho dịch vụ | Inventory | Tạo/cập nhật/ngừng bán dịch vụ du lịch |
-| 9 | Phát hành voucher | Voucher | Phát hành voucher/phiếu dịch vụ sau khi đơn PAID |
-| 10 | Duyệt khiếu nại | Claim | Duyệt hoặc từ chối yêu cầu khiếu nại từ đại lý |
-| 11 | Xem dashboard & báo cáo | Report | Dashboard tổng quan, báo cáo doanh thu, giao dịch ví |
-| 12 | Xuất báo cáo | Report | Xuất dữ liệu giao dịch dạng Excel |
-| 13 | Cấu hình hệ thống | Config | Thiết lập tham số (phí dịch vụ, thời gian hold, audit log) |
+| 4 | Nạp tiền ví đại lý | Wallet | Nạp tiền (Credit) vào ví đại lý sau khi xác nhận chuyển khoản |
+| 5 | Trừ tiền ví đại lý | Wallet | Điều chỉnh thủ công số dư ví (kèm audit log) |
+| 6 | Xem tất cả booking | Booking | Xem toàn bộ đơn đặt chỗ trên hệ thống |
+| 7 | Quản lý kho dịch vụ | Inventory | Tạo/cập nhật/ngừng bán dịch vụ du lịch |
+| 8 | Phát hành voucher | Voucher | Phát hành voucher/phiếu dịch vụ sau khi đơn PAID |
+| 9 | Duyệt khiếu nại | Claim | Duyệt hoặc từ chối yêu cầu khiếu nại từ đại lý |
+| 10 | Xem dashboard & báo cáo | Report | Dashboard tổng quan, báo cáo doanh thu, giao dịch ví |
+| 11 | Xuất báo cáo | Report | Xuất dữ liệu giao dịch dạng Excel |
+| 12 | Cấu hình hệ thống | Config | Thiết lập tham số (phí dịch vụ, thời gian hold, API đối tác) |
 
 ```mermaid
 graph LR
@@ -94,7 +93,6 @@ graph LR
 
     PA --> UC_KYC["Duyệt/Từ chối KYC"]
     PA --> UC_SUSPEND["Đình chỉ đại lý"]
-    PA --> UC_ONBOARD["Onboard tài xế"]
     PA --> UC_CREDIT["Nạp tiền ví"]
     PA --> UC_DEBIT["Trừ tiền ví"]
     PA --> UC_VIEW_BK["Xem tất cả booking"]
@@ -116,22 +114,20 @@ graph LR
 | # | Chức năng | Module | Mô tả |
 |---|-----------|--------|-------|
 | 1 | Đăng ký đại lý mới | Onboard | Đăng ký đại lý vào hệ thống, nộp hồ sơ KYC |
-| 2 | Onboard tài xế | Auth | Thêm tài xế giao dịch vụ cho đại lý mình |
-| 3 | Tìm kiếm dịch vụ | Search | Tìm kiếm khách sạn, tour, vé (giá đã cộng markup) |
-| 4 | Cấu hình markup | Search | Cập nhật tỷ lệ markup (phí dịch vụ) cho đại lý |
-| 5 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
-| 6 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
-| 7 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
-| 8 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
-| 9 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
-| 10 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
+| 2 | Tìm kiếm dịch vụ | Search | Tìm kiếm khách sạn, tour, vé (giá đã cộng markup) |
+| 3 | Cấu hình markup | Search | Cập nhật tỷ lệ markup (phí dịch vụ) cho đại lý |
+| 4 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
+| 5 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
+| 6 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
+| 7 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
+| 8 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
+| 9 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
 
 ```mermaid
 graph LR
     AM["🏢 Agency Manager"]
 
     AM --> UC_REG["Đăng ký đại lý mới"]
-    AM --> UC_DRV["Onboard tài xế"]
     AM --> UC_SEARCH["Tìm kiếm dịch vụ"]
     AM --> UC_MARKUP["Cấu hình markup"]
     AM --> UC_HOLD["Giữ chỗ (Hold)"]
@@ -142,7 +138,7 @@ graph LR
     AM --> UC_NOTI["Xem thông báo"]
 ```
 
-**Phân biệt với Agency Staff:** Agency Manager có thêm quyền đăng ký đại lý, onboard tài xế, và cập nhật cấu hình markup.
+**Phân biệt với Agency Staff:** Agency Manager có thêm quyền đăng ký đại lý và cập nhật cấu hình markup.
 
 ---
 
@@ -179,7 +175,6 @@ graph LR
 
 **Giới hạn so với Agency Manager:**
 - ❌ Không được đăng ký đại lý mới
-- ❌ Không được onboard tài xế
 - ❌ Không được cập nhật cấu hình markup
 - Chỉ hoạt động trong phạm vi đại lý mà mình thuộc về
 
@@ -225,35 +220,28 @@ graph LR
 
 ---
 
-### 3.5 🚗 Delivery Staff (Driver / Hướng dẫn viên)
+### 3.5 🚌 External Transport (Đối tác vận chuyển bên ngoài)
 
-**Vai trò:** Tài xế hoặc hướng dẫn viên thực hiện bàn giao dịch vụ trực tiếp cho khách hàng cuối. Sử dụng app Flutter.
+**Vai trò:** Đối tác vận chuyển ngoại vi (Nhà xe như Phương Trang, Hãng máy bay) kết nối qua API tích hợp.
 
 **Chức năng:**
 
 | # | Chức năng | Module | Mô tả |
 |---|-----------|--------|-------|
-| 1 | Quét QR xác minh voucher | Voucher | Quét mã QR trên voucher khách, xác minh chữ ký HMAC-SHA256 |
-| 2 | Lấy Driver Key | Voucher | Tải HMAC key đang hoạt động để xác minh offline |
-| 3 | Xem danh sách đón khách | Voucher | Xem danh sách khách của chuyến được phân công |
-| 4 | Xem thông báo | Notification | Nhận thông báo phân công chuyến |
+| 1 | Nhận thông tin đặt chỗ | Voucher | Nhận dữ liệu đặt chỗ và thông tin khách hàng từ hệ thống qua API |
+| 2 | Xác minh check-in | Voucher | Xác minh và làm thủ tục lên xe/lên máy bay cho khách hàng bằng vé điện tử/E-Voucher |
 
 ```mermaid
 graph LR
-    DS["🚗 Delivery Staff"]
+    EXT["🚌 External Transport"]
 
-    DS --> UC_QR["Quét QR xác minh voucher"]
-    DS --> UC_KEY["Lấy Driver Key (HMAC)"]
-    DS --> UC_LIST["Xem danh sách đón khách"]
-    DS --> UC_NOTI["Xem thông báo"]
+    EXT --> UC_API["Nhận thông tin đặt vé (API)"]
+    EXT --> UC_CI["Xác minh check-in tại quầy"]
 ```
 
 **Đặc điểm vận hành đặc biệt:**
-- Hoạt động **ngoại tuyến** (offline): quét QR và xác minh HMAC-SHA256 cục bộ trên thiết bị
-- Trước khi offline: đồng bộ danh sách đón khách + HMAC key vào bộ nhớ local (Hive)
-- Ghi log check-in GPS offline → đẩy lên server khi có mạng
-- HMAC key được hệ thống xoay định kỳ (Key Rotation)
-- Chỉ xem được chuyến mình được phân công bởi Agency Manager
+- Không sử dụng ứng dụng di động nội bộ của hệ thống; việc tương tác được tự động hóa qua API kết nối hệ thống bên thứ ba.
+- Khách hàng tự chịu trách nhiệm và chi phí di chuyển từ nhà tới bến xe/nhà ga/sân bay.
 
 ---
 
@@ -267,7 +255,7 @@ graph LR
 |---|--------|---------|-------|
 | 1 | Auto-cancel đơn HELD quá hạn | Mỗi phút | Hủy booking HELD sau 15 phút, hoàn slot kho |
 | 2 | Auto-cancel On-Request quá hạn | Mỗi phút | Hủy đơn PENDING_SUPPLIER_APPROVAL quá 3 tiếng hoặc quá 21:00 |
-| 3 | Key Rotation tài xế | Định kỳ | Xoay HMAC key cho Driver, vô hiệu key cũ |
+| 3 | Đồng bộ đặt vé đối tác | Tức thời / Định kỳ | Gọi API chuyển thông tin đặt chỗ sang Nhà xe/Hãng bay |
 | 4 | Nhắc KYC sắp hết hạn | Hàng ngày | Gửi thông báo 30 ngày trước ngày hết hạn KYC |
 | 5 | Auto-suspend KYC quá hạn | Hàng ngày | Chuyển đại lý sang SUSPENDED nếu KYC hết hạn mà chưa gia hạn |
 
@@ -277,7 +265,7 @@ graph LR
 
     SYS --> JOB1["Auto-cancel HELD quá 15 phút"]
     SYS --> JOB2["Auto-cancel On-Request quá hạn"]
-    SYS --> JOB3["Key Rotation tài xế"]
+    SYS --> JOB3["Đồng bộ đặt vé đối tác"]
     SYS --> JOB4["Nhắc KYC sắp hết hạn"]
     SYS --> JOB5["Auto-suspend KYC quá hạn"]
 ```
@@ -345,14 +333,13 @@ sequenceDiagram
     API->>DB: Chuyển PENDING_SUPPLIER_APPROVAL → CONFIRMED
     API->>DB: Thực thu tiền ví tạm giữ
 
-    Note over Staff, VNPay: ═══ PHẦN 4: BÀN GIAO DỊCH VỤ OFFLINE ═══
+    Note over Staff, VNPay: ═══ PHẦN 4: TỰ DI CHUYỂN & CHECK-IN ═══
 
-    Driver->>API: Đồng bộ danh sách đón khách + HMAC key
-    Driver->>Driver: Mất mạng — quét QR voucher khách
-    Driver->>Driver: Tính HMAC-SHA256 cục bộ → xác minh
-    Driver->>Driver: Verify OK → rung xanh + ghi GPS check-in
-    Driver->>API: Online lại → đẩy log check-in lên server
-    API->>DB: Cập nhật voucher → COMPLETED
+    Staff->>Staff: Đại lý tải E-Voucher/Vé điện tử (PDF/QR)
+    Staff->>Staff: Gửi vé cho Khách hàng cuối
+    Note over Staff, VNPay: Khách hàng tự túc di chuyển từ nhà đến bến xe/sân bay
+    Staff->>API: Khách hàng xuất trình vé check-in tại quầy Đối tác (API check-in)
+    API->>DB: Cập nhật trạng thái vé/đơn hàng thành COMPLETED
 ```
 
 ### 4.2 Luồng nạp ví qua VNPay
@@ -416,16 +403,14 @@ graph LR
         UC03["UC-03: Thu hồi Token (Logout)"]
         UC04["UC-04: Đăng ký Đại lý mới"]
         UC05["UC-05: Duyệt KYC Đại lý"]
-        UC06["UC-06: Onboard Tài xế"]
     end
 
     ALL["Tất cả Actor"] -.-> UC01
     ALL -.-> UC02
     ALL -.-> UC03
     PA["🔑 Platform Admin"] --> UC05
-    PA --> UC06
     AM["🏢 Agency Manager"] --> UC04
-    AM --> UC06
+```,StartLine:400,TargetContent:
 ```
 
 ### 5.2 Module: KYC & Quản lý Đại lý
@@ -568,19 +553,20 @@ graph LR
     SA --> UC35
 ```
 
-### 5.9 Module: Voucher & Bàn giao dịch vụ
+### 5.9 Module: Voucher & Tích hợp vận chuyển
 
 ```mermaid
 graph LR
-    subgraph UC_Voucher["🎫 Voucher & Bàn giao"]
-        UC36["UC-36: Phát hành Voucher"]
-        UC37["UC-37: Xác minh Voucher (QR)"]
-        UC38["UC-38: Lấy Driver Key hoạt động"]
+    subgraph UC_Voucher["🎫 Voucher & Tích hợp vận chuyển"]
+        UC36["UC-36: Phát hành E-Voucher / Vé điện tử"]
+        UC37["UC-37: Gửi thông tin đặt vé sang Nhà xe/Hãng bay"]
+        UC38["UC-38: Tải E-Voucher / Vé điện tử"]
     end
 
     PA["🔑 Platform Admin"] --> UC36
-    DS["🚗 Driver"] --> UC37
-    DS --> UC38
+    SYS["⏰ System / Hangfire"] --> UC37
+    AS["👤 Agency Staff"] --> UC38
+    AM["🏢 Agency Manager"] --> UC38
 ```
 
 ### 5.10 Module: Khiếu nại (Claim)
@@ -645,21 +631,21 @@ graph LR
 
 ## 6. Ma Trận Actor × Module
 
-| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | Driver | System | VNPay |
+| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System | VNPay |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
+| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | KYC (Quản lý đại lý) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — |
 | Search (Tìm kiếm) | — | ✅ R/W | ✅ R | — | — | — | — |
 | Booking (Đặt chỗ) | 👁 Xem all | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Approve | — | ⏰ Cancel | — |
 | Wallet (Ví) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — |
 | Payment (VNPay) | — | ✅ | ✅ | — | — | — | 📩 IPN |
 | Inventory (Kho) | ✅ | — | — | ✅ | — | — | — |
-| Voucher & QR | ✅ Issue | — | — | — | 📱 Scan | ⏰ Key Rotate | — |
+| Voucher & Vận chuyển | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — |
 | Claim (Khiếu nại) | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — |
 | Report & Config | ✅ | — | — | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
+| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — |
 
-**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 📱 Thiết bị · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
+**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🚌 Kết nối API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
 
 ---
 
@@ -672,22 +658,19 @@ graph TD
         R2["AGENCY_MANAGER"]
         R3["AGENCY_STAFF"]
         R4["SUPPLIER_ADMIN"]
-        R5["DELIVERY_STAFF"]
     end
 
     R1 -->|"Toàn quyền"| ALL["Tất cả 14 Module"]
     R2 -->|"Quản lý đại lý"| AGM["Auth, Search (R/W), Booking, Wallet (R), Payment, Claim, Notification"]
     R3 -->|"Bán hàng"| AGS["Search (R), Booking, Wallet (R), Payment, Claim, Notification"]
     R4 -->|"Quản lý NCC"| SUP["Inventory, Booking (Approve), Supplier Portal, Notification"]
-    R5 -->|"Bàn giao DV"| DRV["Voucher Scan, Driver Key, Notification"]
 ```
 
 ### Quy tắc phân quyền
 1. **Mỗi User chỉ có 1 Role** — không hỗ trợ đa vai trò
 2. **Agency Staff thuộc về 1 Agency** — chỉ truy cập dữ liệu đại lý mình
 3. **Supplier Admin thuộc về 1 Supplier** — chỉ quản lý NCC mình
-4. **Driver được phân công theo chuyến** — chỉ xem khách của chuyến được giao
-5. **Platform Admin** — không bị giới hạn phạm vi dữ liệu
+4. **Platform Admin** — không bị giới hạn phạm vi dữ liệu
 
 ---
 
@@ -695,6 +678,6 @@ graph TD
 
 - **Đường nét liền (→)**: Actor trực tiếp sử dụng Use Case
 - **Đường nét đứt (-.->)**: Tất cả Actor đều có quyền / Use Case «include»
-- **System / Hangfire**: Tác vụ tự động chạy nền (auto-cancel, key rotation, nhắc KYC)
+- **System / Hangfire**: Tác vụ tự động chạy nền (auto-cancel, đồng bộ vé đối tác, nhắc KYC)
 - **VNPay Gateway**: Actor ngoài hệ thống — chỉ gọi IPN callback
 - Tài liệu này được tổng hợp từ SRS và Use Case Diagram gốc của dự án

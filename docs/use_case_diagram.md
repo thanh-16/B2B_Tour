@@ -13,7 +13,7 @@ graph TB
         AM["🏢 Agency Manager"]
         AS["👤 Agency Staff"]
         SA["📦 Supplier Admin"]
-        DS["🚗 Delivery Staff / Driver"]
+        EXT["🚌 External Transport / Partner"]
         SYS["⏰ System / Hangfire"]
         VNPAY["💳 VNPay Gateway"]
     end
@@ -31,13 +31,10 @@ graph LR
         UC3["UC-03: Thu hồi Token"]
         UC4["UC-04: Đăng ký Đại lý mới"]
         UC5["UC-05: Duyệt KYC Đại lý"]
-        UC6["UC-06: Onboard Tài xế"]
     end
 
     PA["🔑 Platform Admin"] --> UC5
-    PA --> UC6
     AM["🏢 Agency Manager"] --> UC4
-    AM --> UC6
 
     ALL["👥 Mọi Actor"] --> UC1
     ALL --> UC2
@@ -51,7 +48,6 @@ graph LR
 | UC-03 | Tất cả | Thu hồi refresh token (đăng xuất) |
 | UC-04 | Agency Manager | Đăng ký đại lý mới vào hệ thống (chờ KYC) |
 | UC-05 | Platform Admin | Duyệt / Từ chối KYC của đại lý |
-| UC-06 | Agency Manager | Thêm tài xế giao dịch vụ cho đại lý |
 
 ---
 
@@ -247,26 +243,27 @@ graph LR
 
 ---
 
-## 9. Module: Voucher & Bàn giao dịch vụ (Delivery)
+## 9. Module: Voucher & Tích hợp vận chuyển
 
 ```mermaid
 graph LR
-    subgraph UC_Voucher["🎫 Voucher & Bàn giao"]
-        UC36["UC-36: Phát hành Voucher"]
-        UC37["UC-37: Xác minh Voucher (QR)"]
-        UC38["UC-38: Lấy Driver Key hoạt động"]
+    subgraph UC_Voucher["🎫 Voucher & Tích hợp vận chuyển"]
+        UC36["UC-36: Phát hành E-Voucher / Vé điện tử"]
+        UC37["UC-37: Gửi thông tin đặt vé sang Nhà xe/Hãng bay"]
+        UC38["UC-38: Tải E-Voucher / Vé điện tử"]
     end
 
     PA["🔑 Platform Admin"] --> UC36
-    DS["🚗 Driver"] --> UC37
-    DS --> UC38
+    SYS["⏰ System / Hangfire"] --> UC37
+    AS["👤 Agency Staff"] --> UC38
+    AM["🏢 Agency Manager"] --> UC38
 ```
 
 | Use Case | Actor | Mô tả |
 |----------|-------|-------|
-| UC-36 | Platform Admin | Phát hành voucher/phiếu dịch vụ sau khi đơn PAID |
-| UC-37 | Driver | Quét QR xác minh voucher khi bàn giao dịch vụ |
-| UC-38 | Driver | Lấy HMAC key đang hoạt động để xác minh offline |
+| UC-36 | Platform Admin | Phát hành E-Voucher / Vé điện tử sau khi đơn hàng được thanh toán |
+| UC-37 | System / Hangfire | Gọi API đồng bộ thông tin đặt chỗ với Nhà xe (vd: Phương Trang) hoặc Hãng bay |
+| UC-38 | Agency Staff/Manager | Tải E-Voucher / Vé điện tử để gửi cho khách hàng tự check-in |
 
 ---
 
@@ -336,20 +333,20 @@ graph LR
 
 ## 🎯 Ma trận Actor × Use Case tổng hợp
 
-| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | Driver | System |
+| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — |
 | KYC (Quản lý đại lý) | ✅ | — | — | — | — | — |
 | Search (Tìm kiếm) | — | ✅ | ✅ | — | — | — |
 | Booking (Đặt chỗ) | ✅ (xem all) | ✅ (hold/pay) | ✅ (hold/pay) | ✅ (duyệt/từ chối) | — | ✅ (auto-cancel) |
 | Wallet (Ví) | ✅ (credit/debit) | ✅ (xem) | ✅ (xem) | — | — | — |
 | Payment (VNPay) | — | ✅ | ✅ | — | — | ✅ (IPN) |
 | Inventory (Kho) | ✅ | — | — | ✅ | — | — |
-| Voucher (Bàn giao) | ✅ (phát hành) | — | — | — | ✅ (scan/verify) | — |
+| Voucher & Vận chuyển | ✅ (phát hành) | ✅ (tải về) | ✅ (tải về) | — | 🚌 (nhận API) | ✅ (đồng bộ) |
 | Claim (Khiếu nại) | ✅ (duyệt) | ✅ (tạo) | ✅ (tạo) | — | — | — |
 | Report (Báo cáo) | ✅ | — | — | — | — | — |
 | Config (Hệ thống) | ✅ | — | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Notification | ✅ | ✅ | ✅ | ✅ | — | — |
 
 ---
 
@@ -357,5 +354,6 @@ graph LR
 
 - **Đường nét liền (→)**: Actor trực tiếp sử dụng Use Case
 - **Đường nét đứt (`«include»`)**: Use Case bao gồm use case phụ
-- **System / Hangfire**: Các tác vụ tự động chạy nền (auto-cancel đơn, xoay key tài xế, v.v.)
+- **System / Hangfire**: Các tác vụ tự động chạy nền (auto-cancel đơn quá hạn, đồng bộ đặt vé đối tác, v.v.)
 - **VNPay Gateway**: Actor ngoài hệ thống — gọi IPN callback khi thanh toán hoàn tất
+- **External Transport**: Đối tác vận chuyển ngoại vi (Nhà xe như Phương Trang, Hãng máy bay) kết nối qua API tích hợp. Khách hàng tự chủ động di chuyển đến bến xe/sân bay và check-in với đối tác bằng E-Voucher/Vé điện tử. SYSTEM tự động gọi API đồng bộ thông tin đặt chỗ sau khi thanh toán.
