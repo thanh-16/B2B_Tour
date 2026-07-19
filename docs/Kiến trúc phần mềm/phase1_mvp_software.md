@@ -6,9 +6,9 @@
 
 ## 🎯 Mục Tiêu Phase 1
 
-*   Triển khai đầy đủ **12 module nghiệp vụ MVP** với 45 Use Case cốt lõi.
+*   Triển khai đầy đủ **14 module nghiệp vụ MVP** với **55 Use Cases** cốt lõi.
 *   Code theo đúng **Clean Architecture + CQRS** — không cắt góc, không hardcode.
-*   Đảm bảo 3 luồng tài chính an toàn tuyệt đối: **Giữ chỗ**, **Thanh toán ví**, **Nạp ví VNPay**.
+*   Đảm bảo các luồng tài chính an toàn tuyệt đối: **Giữ chỗ (Hold)**, **Thanh toán gộp (Saga)**, **Nạp ví VNPay**.
 *   Có thể demo bằng 1 lệnh `docker-compose up -d` trước hội đồng.
 
 ---
@@ -17,11 +17,12 @@
 
 ```mermaid
 graph LR
-    subgraph MVP["🏗 Phase 1 MVP - 13 Module"]
+    subgraph MVP["🏗 Phase 1 MVP - 14 Module"]
         M01["M01: Auth & RBAC"]
         M02["M02: KYC & Onboarding"]
         M03["M03: Inventory"]
         M04["M04: Search & Markup"]
+        M05["M05: Shopping Cart"]
         M06["M06: Booking Engine"]
         M07["M07: Wallet & Payment"]
         M09["M09: Voucher & QR"]
@@ -34,19 +35,17 @@ graph LR
     end
 
     subgraph Deferred["⏳ Chuyển sang Phase 2"]
-        M05["M05: Shopping Cart"]
         M08["M08: Invoicing & VAT"]
     end
 
     style Deferred fill:#FFF3E0,stroke:#FF9800
 ```
 
-### Lý do hoãn 2 module
+### Lý do hoãn module
 
 | Module | Lý do hoãn sang Phase 2 |
 | :--- | :--- |
-| **M05 - Shopping Cart** | Combo Cart cần Unified Hold + Atomic Payment — logic Saga/2-Phase Commit phức tạp. Cần booking đơn lẻ ổn định trước. |
-| **M08 - Invoicing & VAT** | Yêu cầu tích hợp API hóa đơn điện tử bên thứ ba + tuân thủ quy định thuế. Không ảnh hưởng đến luồng giao dịch chính. |
+| **M08 - Invoicing & VAT** | Yêu cầu tích hợp API hóa đơn điện tử bên thứ ba + tuân thủ quy định thuế phức tạp. Không ảnh hưởng đến luồng giao dịch và check-in chính. |
 
 ---
 

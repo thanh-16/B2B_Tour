@@ -212,6 +212,12 @@ B2BTravelPlatform/
 │   │   │   │   └── Queries/GetClaimListQuery.cs
 │   │   │   └── Notifications/
 │   │   │       └── Queries/GetNotificationListQuery.cs
+│   │   │   └── Carts/
+│   │   │       ├── Commands/AddToCartCommand.cs
+│   │   │       ├── Commands/RemoveFromCartCommand.cs
+│   │   │       ├── Commands/UnifiedHoldCartCommand.cs
+│   │   │       ├── Commands/PayCartCommand.cs
+│   │   │       └── Queries/GetCartQuery.cs
 │   │   └── Validators/
 │   │       ├── HoldBookingValidator.cs
 │   │       └── CreditWalletValidator.cs
@@ -244,12 +250,14 @@ B2BTravelPlatform/
 │       │   ├── AuthController.cs
 │       │   ├── AgencyController.cs
 │       │   ├── BookingController.cs
+│       │   ├── CartController.cs
 │       │   ├── WalletController.cs
 │       │   ├── InventoryController.cs
 │       │   ├── VoucherController.cs
 │       │   ├── ClaimController.cs
 │       │   ├── NotificationController.cs
-│       │   └── SystemConfigController.cs
+│       │   ├── SystemConfigController.cs
+│       │   └── AiAssistantController.cs
 │       ├── Middlewares/
 │       │   ├── GlobalExceptionMiddleware.cs
 │       │   ├── RequestLoggingMiddleware.cs
