@@ -27,6 +27,9 @@ graph LR
         M12["M12: Reporting & BI"]
         M13["M13: System Config"]
         M14["M14: Supplier Extranet"]
+        M15["M15: AI Assistant"]
+        M16["M16: Real-time Chat"]
+        M17["M17: Review & Rating"]
     end
 ```
 
@@ -672,25 +675,144 @@ graph LR
     PA --> UC52
 ```
 
+### 5.13 Module: Giỏ hàng Combo (Shopping Cart - Phase 2)
+
+```mermaid
+graph LR
+    subgraph UC_Cart["🛒 Giỏ hàng Combo"]
+        UC60["UC-60: Thêm dịch vụ vào giỏ"]
+        UC61["UC-61: Xóa dịch vụ khỏi giỏ"]
+        UC62["UC-62: Xem giỏ hàng"]
+        UC63["UC-63: Hold toàn bộ combo"]
+        UC64["UC-64: Thanh toán combo 1 chạm"]
+    end
+
+    AS["👤 Agency Staff"] --> UC60
+    AS --> UC61
+    AS --> UC62
+    AS --> UC63
+    AS --> UC64
+    AM["🏢 Agency Manager"] --> UC60
+    AM --> UC61
+    AM --> UC62
+    AM --> UC63
+    AM --> UC64
+```
+
+### 5.14 Module: Hóa đơn & VAT (Invoicing - Phase 2)
+
+```mermaid
+graph LR
+    subgraph UC_Invoice["🧾 Hóa đơn & VAT"]
+        UC65["UC-65: Tạo hóa đơn VAT"]
+        UC66["UC-66: Xem danh sách hóa đơn"]
+        UC67["UC-67: Tải hóa đơn PDF"]
+    end
+
+    PA["🔑 Platform Admin"] --> UC65
+    PA --> UC66
+    AM["🏢 Agency Manager"] --> UC66
+    AM --> UC67
+    SYS["⏰ System / Hangfire"] -.-> |"Tự động tạo"| UC65
+```
+
+### 5.15 Module: Cộng tác viên / Sub-Agent (Phase 2)
+
+```mermaid
+graph LR
+    subgraph UC_SubAgent["👥 Cộng tác viên (Sub-Agent)"]
+        UC68["UC-68: Tạo tài khoản CTV"]
+        UC69["UC-69: Cấu hình hoa hồng CTV"]
+        UC70["UC-70: Xem báo cáo hoa hồng"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC68
+    AM --> UC69
+    AM --> UC70
+```
+
+### 5.16 Module: Chat thời gian thực (Real-time Chat - Phase 2)
+
+```mermaid
+graph LR
+    subgraph UC_Chat["💬 Chat thời gian thực"]
+        UC74["UC-74: Gửi tin nhắn tức thời"]
+        UC75["UC-75: Nhận tin nhắn tức thời"]
+        UC76["UC-76: Xem lịch sử chat theo Booking"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC74
+    AM --> UC75
+    AM --> UC76
+    AS["👤 Agency Staff"] --> UC74
+    AS --> UC75
+    AS --> UC76
+    SA["📦 Supplier Admin"] --> UC74
+    SA --> UC75
+    SA --> UC76
+```
+
+### 5.17 Module: Đánh giá & Phản hồi (Review & Rating - Phase 2)
+
+```mermaid
+graph LR
+    subgraph UC_Review["⭐ Đánh giá & Phản hồi"]
+        UC77["UC-77: Gửi đánh giá dịch vụ"]
+        UC78["UC-78: Xem danh sách đánh giá"]
+        UC79["UC-79: Tự động tính toán điểm uy tín"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC77
+    AS["👤 Agency Staff"] --> UC77
+    AM --> UC78
+    AS --> UC78
+    SA["📦 Supplier Admin"] --> UC78
+    SYS["⏰ System / Hangfire"] --> UC79
+```
+
+### 5.18 Module: Trợ Lý AI Báo Giá & Tạo Combo (AI Assistant - Phase 1)
+
+```mermaid
+graph LR
+    subgraph UC_AIAssistant["🤖 Trợ Lý AI Báo Giá & Tạo Combo"]
+        UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
+        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
+        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC80
+    AM --> UC81
+    AM --> UC82
+    AS["👤 Agency Staff"] --> UC80
+    AS --> UC81
+    AS --> UC82
+    AI_AST["🤖 AI Assistant"] --> UC81
+    AI_AST --> UC82
+```
+
 ---
 
-## 6. Ma Trận Actor × Module
+## 6. Ma Trận Actor × Module (Bản Đầy Đủ Phase 1 & Phase 2)
 
 | Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System | VNPay | AI Assistant |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| KYC (Quản lý đại lý) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — | — |
-| Search (Tìm kiếm) | — | ✅ R/W | ✅ R | — | — | — | — | 🤖 Hỗ trợ tìm |
-| Booking (Đặt chỗ) | 👁 Xem all | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Approve | — | ⏰ Cancel | — | 🤖 Auto Hold |
-| Wallet (Ví) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — | — |
-| Payment (VNPay) | — | ✅ | ✅ | — | — | — | 📩 IPN | — |
-| Inventory (Kho) | ✅ | — | — | ✅ | — | — | — | — |
-| Voucher & Vận chuyển | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — | — |
-| Claim (Khiếu nại) | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — | — |
-| Report & Config | ✅ | — | — | — | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
-| Chat (SignalR) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — | — |
-| Review & Rating | — | 📝 Gửi | 📝 Gửi | 👁 Xem | — | ⏰ Auto-Calc | — | — |
+| Auth & Profile (M01) | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| KYC (M02) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — | — |
+| Inventory (M03) | ✅ | — | — | ✅ | — | — | — | — |
+| Search & Markup (M04) | — | ✅ R/W | ✅ R | — | — | — | — | 🤖 Hỗ trợ tìm |
+| Shopping Cart (M05 - P2) | — | ✅ | ✅ | — | — | — | — | — |
+| Booking Engine (M06) | 👁 Xem all | ✅ Hold/Pay/Cancel | ✅ Hold/Pay/Cancel | ✅ Approve | — | ⏰ Cancel | — | 🤖 Auto Hold |
+| Wallet (M07) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — | — |
+| Invoicing & VAT (M08 - P2) | ✅ Generate | 👁 View | — | — | — | ⏰ Auto | — | — |
+| Voucher & QR (M09) | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — | — |
+| Notification (M10) | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| Claim (M11) | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — | — |
+| Report & Config (M12/13) | ✅ | — | — | — | — | — | — | — |
+| Supplier Extranet (M14) | — | — | — | ✅ | — | — | — | — |
+| AI Assistant (M15 - P1) | — | ✅ Chat | ✅ Chat | — | — | — | — | 🤖 Generate |
+| Real-time Chat (M16 - P2) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — | — |
+| Review & Rating (M17 - P2) | — | 📝 Gửi | 📝 Gửi | 👁 Xem | — | ⏰ Auto-Calc | — | — |
+| VietQR Auto-Credit (P2) | — | ✅ | ✅ | — | — | — | — | — |
 
 **Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🤖 Tích hợp AI · 🚌 Kết nối API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
 
@@ -707,10 +829,10 @@ graph TD
         R4["SUPPLIER_ADMIN"]
     end
 
-    R1 -->|"Toàn quyền"| ALL["Tất cả 14 Module"]
-    R2 -->|"Quản lý đại lý"| AGM["Auth, Search (R/W), Booking, Wallet (R), Payment, Claim, Notification"]
-    R3 -->|"Bán hàng"| AGS["Search (R), Booking, Wallet (R), Payment, Claim, Notification"]
-    R4 -->|"Quản lý NCC"| SUP["Inventory, Booking (Approve), Supplier Portal, Notification"]
+    R1 -->|"Toàn quyền"| ALL["Tất cả 17 Module"]
+    R2 -->|"Quản lý đại lý"| AGM["Auth, Onboarding, Search, Booking, Wallet, Payment, Claim, Notification, Chat, Review, Cart, Invoice, Sub-Agent"]
+    R3 -->|"Bán hàng"| AGS["Auth, Search, Booking, Wallet, Payment, Claim, Notification, Chat, Review, Cart"]
+    R4 -->|"Quản lý NCC"| SUP["Auth, Inventory, Booking (Approve), Supplier Portal, Notification, Chat, Review"]
 ```
 
 ### Quy tắc phân quyền
