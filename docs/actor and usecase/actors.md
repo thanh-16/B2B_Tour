@@ -437,6 +437,143 @@ sequenceDiagram
     API-->>AM: Thông báo: Đại lý bị đình chỉ
 ```
 
+### 4.4 Luồng Trợ lý AI Báo Giá & Tự động giữ chỗ (AI Assistant - Phase 1)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as 👤 Agency Staff/Manager
+    participant API as 🏗 Backend API
+    participant AI as 🤖 Gemini LLM Engine
+    participant DB as 💾 Database (Inventory)
+
+    Staff->>API: Gửi yêu cầu tự nhiên (Ví dụ: "Tìm phòng Đà Lạt ngày 15/9")
+    API->>AI: Chuyển Prompt kèm System Instruction & Tools
+    AI-->>API: Yêu cầu gọi Function: search_inventory("Đà Lạt", "2026-09-15")
+    API->>DB: Thực hiện câu lệnh SELECT tìm phòng sỉ
+    DB-->>API: Trả về danh sách phòng và giá gốc sỉ
+    API->>API: Tự động cộng tỷ lệ Markup (%) cấu hình của Đại lý
+    API->>AI: Trả về kết quả thô đã cộng markup cho LLM
+    AI-->>API: Trả về nội dung hội thoại tự nhiên định dạng JSON combo
+    API-->>Staff: Hiển thị 3 combo đề xuất kèm nút [Giữ Chỗ]
+
+    Staff->>API: Nhấn nút [Giữ Chỗ] combo mong muốn
+    API->>API: Kích hoạt luồng Hold Booking cốt lõi (4.1)
+    API-->>Staff: Trả về mã PNR và giữ chỗ thành công
+```
+
+### 4.5 Luồng Giỏ Hàng Combo Đa Dịch Vụ (Shopping Cart - Phase 2)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as 👤 Agency Staff/Manager
+    participant API as 🏗 Backend API
+    participant Saga as ⚙️ Saga Orchestrator
+    participant Lock as 🔒 Redis Lock
+    participant DB as 💾 Database & Wallet
+
+    Staff->>API: Nhấn thanh toán giỏ hàng Combo (Checkout)
+    API->>Saga: Khởi tạo luồng ComboCheckoutSaga
+    
+    Saga->>Lock: Yêu cầu khóa đồng thời (Multi-Lock) các slot dịch vụ A, B, C
+    Lock-->>Saga: Khóa thành công (Slot được bảo vệ chống tranh chấp)
+
+    Saga->>DB: Kiểm tra số lượng slot trống của các dịch vụ
+    alt Bất kỳ dịch vụ nào hết slot
+        Saga->>Lock: Giải phóng tất cả khóa
+        Saga-->>Staff: Báo lỗi hết chỗ, rollback giỏ hàng
+    else Tất cả dịch vụ đủ chỗ
+        Saga->>DB: Hold slot dịch vụ A, B, C (Trừ số lượng khả dụng)
+        Saga->>DB: Trừ tiền ví đại lý một lần duy nhất cho tổng combo
+        alt Trừ tiền thành công
+            Saga->>DB: Tạo nhiều Booking đơn, chuyển PAID + tạo E-Vouchers
+            Saga->>Lock: Giải phóng tất cả khóa
+            Saga-->>Staff: Xuất các vé Combo thành công
+        else Trừ tiền thất bại (Thiếu số dư)
+            Saga->>DB: Rollback slot kho dịch vụ A, B, C (Compensating Action)
+            Saga->>Lock: Giải phóng tất cả khóa
+            Saga-->>Staff: Báo lỗi thiếu số dư ví, hoàn trả trạng thái kho
+        end
+    end
+```
+
+### 4.6 Luồng Chat tức thời giữa Đại lý ↔ Nhà cung cấp (Real-time Chat - Phase 2)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as 👤 Agency Staff/Manager
+    actor Supplier as 📦 Supplier Admin
+    participant Hub as 🔌 SignalR ChatHub
+    participant Redis as ⚡ Redis Pub/Sub
+    participant DB as 💾 Database & Storage
+
+    Note over Staff, Supplier: Đã mở kết nối WebSocket thành công từ trước
+    Staff->>Hub: Gửi tin nhắn text/ảnh kèm BookingId
+    Hub->>DB: Lưu ChatMessage vào Database PostgreSQL
+    Hub->>Redis: Publish Message (BookingId, SenderId, ReceiverId, Content)
+    
+    Note over Redis: Đồng bộ tin nhắn xuyên suốt cụm API Servers
+    Redis-->>Hub: Nhận tin nhắn và kiểm tra ConnectionId của Supplier
+    
+    alt Supplier đang Online kết nối WebSocket
+        Hub->>Supplier: Đẩy tin nhắn tức thời qua SignalR
+    else Supplier đang Offline
+        Hub->>DB: Tạo Notification chờ đọc
+        Hub->>Hub: Trigger Push Notification (FCM) đến điện thoại Supplier
+    end
+```
+
+### 4.7 Luồng Đánh giá & Phản hồi dịch vụ (Review & Rating - Phase 2)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Staff as 👤 Agency Staff/Manager
+    participant API as 🏗 Backend API
+    participant DB as 💾 Database & Ledger
+    participant Job as ⏰ Hangfire (Job chạy nền)
+
+    Staff->>API: Gửi đánh giá (Review: BookingId, Rating 1-5★, Comment)
+    API->>DB: Kiểm tra trạng thái Booking = COMPLETED
+    API->>DB: Kiểm tra BookingId chưa từng được đánh giá (Chống spam)
+    
+    API->>DB: Ghi dữ liệu vào bảng Review (Committed)
+    API->>DB: Lưu Outbox Message: "ReviewCreatedEvent"
+    API-->>Staff: Xác nhận đánh giá thành công
+
+    Note over Job: Chạy ngầm định kỳ
+    Job->>DB: Quét Outbox Message & lấy danh sách Review của SupplierId
+    Job->>DB: Tính toán: AverageRating = Tổng điểm / Tổng đánh giá
+    Job->>DB: Cập nhật AverageRating vào bảng Supplier
+```
+
+### 4.8 Luồng Nạp Ví tự động qua VietQR (VietQR Auto-Credit - Phase 2)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor AM as 🏢 Agency Manager
+    participant API as 🏗 Backend API
+    participant Casso as 🔌 Casso/PayOS Webhook
+    participant DB as 💾 Database & Ledger
+
+    AM->>API: Chọn nạp ví bằng VietQR
+    API->>API: Sinh mã QR động (Dynamic QR: Số tiền + Code duy nhất trong nội dung chuyển khoản)
+    API-->>AM: Hiển thị VietQR trên màn hình điện thoại
+
+    AM->>AM: Quét QR & thực hiện chuyển khoản bằng app ngân hàng
+    Casso->>API: POST /webhook/bank-transfer (kèm nội dung, số tiền, hash bảo mật)
+    
+    API->>API: Xác thực chữ ký Hash bảo mật từ Casso
+    API->>API: Kiểm tra trùng lặp giao dịch (Idempotency Key trong Redis)
+    
+    API->>DB: SELECT ví theo đại lý khớp với Code chuyển khoản
+    API->>DB: Cộng tiền ví đại lý + Ghi Wallet Ledger
+    API-->>AM: Gửi Push Notification: "Nạp ví thành công"
+```
+
 ---
 
 ## 5. Sơ Đồ Use Case Tổng Hợp Theo Module
