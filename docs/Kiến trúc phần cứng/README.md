@@ -113,7 +113,7 @@ Bảng dưới đây liệt kê đầy đủ các thành phần hạ tầng cầ
 
 ## 🛡️ 3. Phương Án Phòng Tránh Lỗi Hệ Thống Kinh Điển
 
-Hệ thống phần cứng được thiết kế để giải quyết triệt để 4 lỗi kỹ thuật nghiêm trọng nhất trong vận hành sàn du lịch B2B:
+Hệ thống phần cứng được thiết kế để giải quyết triệt để 6 lỗi kỹ thuật nghiêm trọng nhất trong vận hành sàn du lịch B2B:
 
 ### Lỗi 1: Tranh chấp giữ chỗ (Race Condition / Overbooking)
 *   **Kịch bản lỗi:** 2 đại lý cùng đặt chỗ 1 chiếc vé xe cuối cùng tại cùng 1 mili-giây. Nếu Database xử lý chậm, cả 2 đơn đều được chấp nhận nhưng nhà xe chỉ còn 1 chỗ thực tế.

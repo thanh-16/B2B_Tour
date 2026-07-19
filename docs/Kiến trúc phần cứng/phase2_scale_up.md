@@ -163,7 +163,7 @@ Bảng dưới đây thể hiện rõ từng thành phần đã được nâng c
     *   Disk usage > 85%.
     *   Hangfire Job bị thất bại > 3 lần liên tiếp.
 
-### 4.4 Cơ Thế Đồng Bộ WebSocket Chat Xuyên Suốt Cụm (SignalR Redis Backplane)
+### 4.4 Cơ Chế Đồng Bộ WebSocket Chat Xuyên Suốt Cụm (SignalR Redis Backplane)
 *   Do cụm API hoạt động sau Load Balancer, các client sẽ kết nối vào các server khác nhau.
 *   Hạ tầng sử dụng **Redis Pub/Sub** làm SignalR Backplane. Khi API Server 1 nhận message chat từ Client A gửi tới Client B, API Server 1 sẽ đóng gói và publish tin nhắn này lên Redis.
 *   API Server 2 subcribe kênh Redis, nhận message và chuyển tiếp trực tiếp xuống kết nối WebSocket đang hoạt động của Client B. Điều này triệt tiêu hoàn toàn rủi ro mất tin nhắn chat thời gian thực do lệch server kết nối.
