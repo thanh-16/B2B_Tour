@@ -17,7 +17,7 @@
 
 ```mermaid
 graph LR
-    subgraph MVP["🏗 Phase 1 MVP - 12 Module"]
+    subgraph MVP["🏗 Phase 1 MVP - 13 Module"]
         M01["M01: Auth & RBAC"]
         M02["M02: KYC & Onboarding"]
         M03["M03: Inventory"]
@@ -30,6 +30,7 @@ graph LR
         M12["M12: Reporting"]
         M13["M13: System Config"]
         M14["M14: Supplier Extranet"]
+        M15["M15: AI Assistant"]
     end
 
     subgraph Deferred["⏳ Chuyển sang Phase 2"]
@@ -101,6 +102,13 @@ Features/
 │       ├── GetWalletBalanceQuery.cs     → Số dư + hạn mức
 │       └── GetWalletHistoryQuery.cs     → Lịch sử giao dịch phân trang
 │
+├── AiAssistant/
+│   ├── Commands/
+│   │   └── SendAiChatCommand.cs        → Nhận text, gọi Gemini API, trả JSON combo
+│   └── Services/
+│       ├── IAiModelService.cs
+│       └── AiModelService.cs           → Gọi trực tiếp Gemini API qua HttpClient
+│
 └── ... (tương tự cho Agencies, Inventory, Claims, Notifications, Vouchers)
 ```
 
@@ -120,6 +128,7 @@ Features/
 | `AutoCancelExpiredBookingsJob` | — | Hangfire | Recurring mỗi phút, hủy HELD quá 15 phút |
 | `SyncPartnerBookingJob` | — | Hangfire | Fire-and-forget, gọi API đối tác + Retry |
 | `KycExpiryReminderJob` | — | Hangfire | Recurring hàng ngày, nhắc KYC sắp hết hạn |
+| `AiModelService` | `IAiModelService` | HttpClient | Gọi API Google Gemini, cấu hình system instruction và tools |
 
 ### 2.4 Presentation Layer — API Controllers
 
@@ -135,6 +144,7 @@ Features/
 | `ClaimController` | POST /, GET /list, PUT /{id}/resolve | Manager, Staff / Admin |
 | `NotificationController` | GET /list, PUT /{id}/read, PUT /read-all | All authenticated |
 | `SystemConfigController` | GET /, PUT / | Admin only |
+| `AiAssistantController` | POST /ai/chat | Manager, Staff |
 
 ---
 
@@ -194,6 +204,21 @@ Features/
 3. Return: {"RspCode": "00"} cho VNPay
 ```
 
+### 3.4 Luồng Xử Lý Trợ Lý AI Báo Giá & Tạo Combo
+
+```text
+1. Client gửi SendAiChatCommand ("Tìm combo đi Đà Lạt ngày 15/9 cho 2 người...")
+2. Handler:
+   a. Gọi IAiModelService.GenerateResponseAsync(prompt)
+   b. System Instruction của Gemini yêu cầu phân tích text và dùng Tool: search_inventory
+   c. HttpClient gọi Gemini API -> Gemini trả về yêu cầu gọi Function Calling
+   d. Handler chặn lại, thực thi API Search nội bộ lấy danh sách phòng/vé sỉ
+   e. Handler tính toán giá sỉ + tỉ lệ Markup (%) hiện tại của đại lý đó
+   f. Handler gửi lại kết quả dữ liệu thô cho Gemini để LLM sinh câu trả lời tự nhiên định dạng JSON đề xuất
+   g. Đề xuất hiển thị 3 combo kèm thông số và nút [Giữ Chỗ]
+3. Client nhấn nút [Giữ Chỗ] trên giao diện AI chat -> Gọi API Hold Booking (3.1)
+```
+
 ---
 
 ## 🧪 4. Chiến Lược Testing MVP
@@ -238,3 +263,4 @@ InventorySlot.DecrementSlot()
 | 6 | Testing | Unit test cho 3 luồng tài chính: Hold, Pay, VNPay IPN |
 | 7 | Docker | `docker-compose up -d` khởi động toàn bộ: API + Redis + PostgreSQL + Hangfire |
 | 8 | Security | JWT + Refresh Token Rotation + RBAC 4 roles + Idempotent VNPay |
+| 9 | AI Assistant | Tích hợp HttpClient kết nối Gemini API, xử lý Function Calling lấy giá kèm markup |

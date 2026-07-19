@@ -8,9 +8,9 @@
 
 ## 📊 Tổng quan MVP
 
-*   **Tổng số Use Case MVP:** 45 UC
-*   **Số Actor:** 7 (4 con người + 3 hệ thống/đối tác)
-*   **Số Module triển khai:** 12 / 14 module (trừ Invoicing & VAT, Shopping Cart — chuyển sang Phase 2)
+*   **Tổng số Use Case MVP:** 48 UC (bao gồm 3 UC mới của Trợ lý AI)
+*   **Số Actor:** 8 (4 con người + 4 hệ thống/đối tác)
+*   **Số Module triển khai:** 13 / 15 module (thêm AI Assistant, trừ Invoicing & VAT và Shopping Cart chuyển sang Phase 2)
 
 ---
 
@@ -102,6 +102,11 @@ graph LR
         UC49["UC-49: Xem giao dịch Ledger"]
         UC50["UC-50: Xuất báo cáo Excel"]
         UC52["UC-52: Cấu hình hệ thống"]
+
+        %% AI Assistant (Đưa từ Phase 2 về Phase 1)
+        UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
+        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
+        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
     end
 
     %% ──────────────────────────────────────
@@ -177,6 +182,15 @@ graph LR
     VNPAY --> UC26
     EXT --> UC37
     EXT --> UC38
+
+    AI_AST["🤖 AI Assistant"] --> UC81
+    AI_AST --> UC82
+    AM --> UC80
+    AM --> UC81
+    AM --> UC82
+    AS --> UC80
+    AS --> UC81
+    AS --> UC82
 ```
 
 ---
@@ -556,6 +570,36 @@ graph LR
 
 ---
 
+### Module: Trợ Lý AI Báo Giá & Tạo Combo (AI Assistant)
+
+> **Mục tiêu:** Tích hợp trực tiếp công nghệ LLM (Gemini API) để hỗ trợ Agency Staff chat, báo giá và tự động giữ chỗ (Hold Booking) từ giao diện chatbot.
+
+```mermaid
+graph LR
+    subgraph AIAssistant["🤖 Trợ Lý AI Báo Giá & Tạo Combo"]
+        UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
+        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
+        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC80
+    AM --> UC81
+    AM --> UC82
+    AS["👤 Agency Staff"] --> UC80
+    AS --> UC81
+    AS --> UC82
+    AI_AST["🤖 AI Assistant"] -.-> |"Phân tích & Tìm kiếm"| UC81
+    AI_AST -.-> |"Auto Hold API"| UC82
+```
+
+| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
+|---|---|---|---|
+| UC-80 | Agency Manager, Staff | Nhập câu lệnh chatbot yêu cầu combo dịch vụ (Ví dụ: "Combo đi Đà Lạt 3N2Đ cho 2 người...") | Text-based chat UI trong App |
+| UC-81 | Agency Manager, Staff, AI Assistant | AI phân tích yêu cầu (NLP), tự động gọi API Search nội bộ, tính toán giá đã cộng markup và đề xuất 3 combo | Đề xuất hiển thị đầy đủ chi tiết, giá tiền đã cộng markup của chính đại lý đó |
+| UC-82 | Agency Manager, Staff, AI Assistant | Người dùng nhấn nút đặt trong ô chat AI, AI gọi API Hold Booking để giữ chỗ trực tiếp | Trigger luồng Hold Booking cốt lõi |
+
+---
+
 ### Tác vụ nền tự động (System / Hangfire)
 
 | # | Tác vụ | Trigger | Mô tả |
@@ -570,20 +614,21 @@ graph LR
 
 ## 📊 Ma Trận Actor × Module (MVP)
 
-| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | VNPay | Ext. Transport |
-|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth & Profile | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| KYC | ✅ Duyệt/Từ chối | 📝 Nộp | — | — | ⏰ Nhắc/Suspend | — | — |
-| Staff Management | — | ✅ Quản lý | — | — | — | — | — |
-| Search & Markup | — | ✅ R/W | ✅ R | — | — | — | — |
-| Booking | 👁 Xem all | ✅ Hold/Pay/Cancel | ✅ Hold/Pay/Cancel | ✅ Approve/Reject | ⏰ Auto-cancel | — | — |
-| Wallet | ✅ Credit/Debit | 👁 View + History | 👁 View + History | — | — | — | — |
-| VNPay Payment | — | ✅ | ✅ | — | — | 📩 IPN | — |
-| Inventory | ✅ | — | — | ✅ | — | — | — |
-| Supplier Extranet | — | — | — | ✅ | — | — | — |
-| Voucher | ✅ Issue | 👁 Tải | 👁 Tải | — | ⏰ Sync API | — | 🚌 Nhận API |
-| Claim | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Report & Config | ✅ | — | — | — | — | — | — |
+| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | VNPay | Ext. Transport | AI Assistant |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Auth & Profile | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| KYC | ✅ Duyệt/Từ chối | 📝 Nộp | — | — | ⏰ Nhắc/Suspend | — | — | — |
+| Staff Management | — | ✅ Quản lý | — | — | — | — | — | — |
+| Search & Markup | — | ✅ R/W | ✅ R | — | — | — | — | 🤖 Hỗ trợ tìm |
+| Booking | 👁 Xem all | ✅ Hold/Pay/Cancel | ✅ Hold/Pay/Cancel | ✅ Approve/Reject | ⏰ Auto-cancel | — | — | 🤖 Auto Hold |
+| Wallet | ✅ Credit/Debit | 👁 View + History | 👁 View + History | — | — | — | — | — |
+| VNPay Payment | — | ✅ | ✅ | — | — | 📩 IPN | — | — |
+| Inventory | ✅ | — | — | ✅ | — | — | — | — |
+| Supplier Extranet | — | — | — | ✅ | — | — | — | — |
+| Voucher | ✅ Issue | 👁 Tải | 👁 Tải | — | ⏰ Sync API | — | 🚌 Nhận API | — |
+| Claim | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — | — |
+| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| Report & Config | ✅ | — | — | — | — | — | — | — |
+| AI Agent Assistant | — | ✅ Chat | ✅ Chat | — | — | — | — | 🤖 Generate |
 
-**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🚌 API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
+**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🤖 Tích hợp AI · 🚌 API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc

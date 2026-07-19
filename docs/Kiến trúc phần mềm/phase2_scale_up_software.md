@@ -209,44 +209,6 @@ graph TD
     │       └── ReviewCreatedHandler.cs     # Enqueue job tính lại trung bình
     ```
 
-### 2.7 Trợ Lý AI Báo Giá & Tạo Combo Tự Động (AI Travel Agent Assistant)
-
-*   **Mô tả luồng xử lý RAG & Function Calling:**
-    ```text
-    User Chat prompt: "Combo đi Đà Lạt 3N2Đ cho 2 người..."
-           │
-           ▼
-    [Web API: AI Chat Handler] 
-           │
-           ▼
-    [LLM Engine: Gemini API (System Instruction)] 
-           │ (LLM quyết định gọi Function)
-           ▼
-    [Function Calling: search_inventory(destination, dates, guests)]
-           │
-           ▼
-    [App Service: SearchInventoryQuery] (Lấy giá sỉ gốc)
-           │
-           ▼
-    [Logic: Apply Markup & Calculate Combo] (Áp markup của Agency)
-           │
-           ▼
-    [LLM Engine: Sinh câu trả lời định dạng JSON combo]
-           │
-           ▼
-    [Mobile UI: Render 3 Combos kèm nút Hold Booking]
-    ```
-*   **Cấu trúc thư mục code:**
-    ```text
-    Features/
-    ├── AiAssistant/
-    │   ├── Commands/
-    │   │   └── SendAiChatCommand.cs        # Xử lý hội thoại NLP với LLM
-    │   └── Services/
-    │       ├── IAiModelService.cs          # Interface kết nối LLM (Gemini)
-    │       └── AiModelService.cs           # Cài đặt HttpClient gọi API Gemini
-    ```
-
 ---
 
 ## ⚡ 3. Nâng Cấp Kiến Trúc
@@ -423,7 +385,6 @@ erDiagram
 | **Sprint 5** | Invoicing & VAT | Thêm Invoice entity, EInvoice API client, auto-generate job | Trung bình — phụ thuộc API bên thứ ba |
 | **Sprint 6** | Sub-Agent / CTV | Thêm SubAgent entity, Commission logic, report query | Thấp — mở rộng từ Agency/Wallet đã có |
 | **Sprint 7** | Real-time Chat + Rating | Thêm ChatHub, Redis Backplane, Review entity, unique checks | Trung bình — tích hợp socket & async jobs |
-| **Sprint 8** | Trợ lý AI Báo Giá | Tích hợp HttpClient Gemini API, NLP parsing & Function Calling | Trung bình — quản lý API token, Prompt tuning |
 
 ---
 
@@ -439,4 +400,3 @@ erDiagram
 | **EInvoice API** | Xuất hóa đơn VAT điện tử tự động |
 | **Microsoft.AspNetCore.SignalR** | Xây dựng kết nối WebSocket real-time phục vụ Chat Hub |
 | **StackExchange.Redis (Backplane)** | Message broker đồng bộ tin nhắn Chat giữa các Web API server chạy song song |
-| **Gemini API / Semantic Kernel** | Tích hợp mô hình ngôn ngữ lớn xử lý yêu cầu combo bằng ngôn ngữ tự nhiên |

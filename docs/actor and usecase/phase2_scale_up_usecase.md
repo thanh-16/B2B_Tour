@@ -8,10 +8,10 @@
 
 ## 📊 Tổng quan Phase 2
 
-*   **Use Case mới bổ sung:** 23 UC (bao gồm 9 UC mới cho Chat, Review/Rating và Trợ lý AI)
-*   **Module mới:** Invoicing & VAT (M08), Shopping Cart (M05), Real-time Chat, Review & Rating, AI Assistant
-*   **Actor mới:** Sub-Agent / CTV, AI Assistant
-*   **Tổng UC sau Phase 2:** 45 (MVP) + 23 (Scale-up) = **68 UC**
+*   **Use Case mới bổ sung:** 20 UC (bao gồm 6 UC mới cho Chat, Review/Rating)
+*   **Module mới:** Invoicing & VAT (M08), Shopping Cart (M05), Real-time Chat, Review & Rating
+*   **Actor mới:** Sub-Agent / CTV
+*   **Tổng UC sau Phase 2:** 48 (MVP) + 20 (Scale-up) = **68 UC**
 
 ---
 
@@ -223,36 +223,6 @@ graph LR
 
 ---
 
-### Module mới: Trợ Lý AI Báo Giá & Tạo Combo (AI Assistant)
-
-> **Lý do chuyển sang Phase 2:** Tính năng nâng cao hỗ trợ ra quyết định (DSS). Đòi hỏi tích hợp LLM APIs (Gemini/GPT) và kỹ thuật RAG trên kho dịch vụ của sàn. Chỉ thực hiện khi lõi Inventory và Core Search (Phase 1) đã chạy mượt.
-
-```mermaid
-graph LR
-    subgraph AIAssistant["🤖 Trợ Lý AI Báo Giá & Tạo Combo"]
-        UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
-        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
-        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
-    end
-
-    AM["🏢 Agency Manager"] --> UC80
-    AM --> UC81
-    AM --> UC82
-    AS["👤 Agency Staff"] --> UC80
-    AS --> UC81
-    AS --> UC82
-    AI["🤖 AI Assistant"] -.-> |"Phân tích & Tìm kiếm"| UC81
-    AI -.-> |"Auto Hold API"| UC82
-```
-
-| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
-|---|---|---|---|
-| UC-80 | Agency Manager, Staff | Nhập câu lệnh chatbot yêu cầu combo dịch vụ (Ví dụ: "Combo đi Nha Trang 3N2Đ cho 2 người lớn...") | Text-based chat UI trong App |
-| UC-81 | Agency Manager, Staff, AI Assistant | AI phân tích yêu cầu (NLP), tự động gọi API Search nội bộ, tính toán giá đã cộng markup và đề xuất 3 combo | Đề xuất hiển thị đầy đủ chi tiết, giá tiền đã cộng markup của chính đại lý đó |
-| UC-82 | Agency Manager, Staff, AI Assistant | Người dùng nhấn nút đặt trong ô chat AI, AI gọi API Hold Booking để giữ chỗ trực tiếp | Trigger luồng Hold Booking cốt lõi |
-
----
-
 ## 🤖 Hướng Phát Triển AI & Nghiên Cứu Khác
 
 Các tính năng AI và kỹ thuật nâng cao hỗ trợ báo cáo đồ án:
@@ -277,21 +247,19 @@ Thực hiện từng bước, mỗi bước là 1 sprint (2 tuần), ưu tiên t
 | **Sprint 4** | Cổng CTV & Chia hoa hồng | 3 UC | Mở rộng mạng lưới phân phối, tăng số đại lý gián tiếp |
 | **Sprint 5** | Thông báo đa kênh (Zalo/Telegram) | 1 UC | Tăng tỷ lệ chuyển đổi đơn hàng thành công |
 | **Sprint 6** | Chat thời gian thực + Rate & Review | 6 UC | Cải thiện kết nối và tính minh bạch trên sàn B2B |
-| **Sprint 7** | Trợ lý AI Báo Giá & Tạo Combo | 3 UC | Tính năng đột phá giúp tăng tỷ lệ chốt đơn tự động |
 
 ---
 
 ## 📊 Ma Trận Actor × Module (Phase 2 — Bổ sung)
 
-| Module Phase 2 | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | Bank Webhook | AI Assistant |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Shopping Cart (Combo) | — | ✅ | ✅ | — | — | — | — |
-| Invoicing & VAT | ✅ Generate | 👁 View + Download | — | — | ⏰ Auto-generate | — | — |
-| Sub-Agent / CTV | — | ✅ Quản lý | — | — | — | — | — |
-| VietQR Auto-Credit | — | ✅ | ✅ | — | — | 📩 Webhook | — |
-| Thông báo đa kênh | — | — | — | — | ⏰ Auto-send | — | — |
-| Chat (SignalR Hub) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — |
-| Review & Rating | — | 📝 Gửi | 📝 Gửi | 👁 Xem | ⏰ Auto-Calc | — | — |
-| AI Agent Assistant | — | ✅ Chat | ✅ Chat | — | — | — | 🤖 Generate |
+| Module Phase 2 | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | Bank Webhook |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Shopping Cart (Combo) | — | ✅ | ✅ | — | — | — |
+| Invoicing & VAT | ✅ Generate | 👁 View + Download | — | — | ⏰ Auto-generate | — |
+| Sub-Agent / CTV | — | ✅ Quản lý | — | — | — | — |
+| VietQR Auto-Credit | — | ✅ | ✅ | — | — | 📩 Webhook |
+| Thông báo đa kênh | — | — | — | — | ⏰ Auto-send | — |
+| Chat (SignalR Hub) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — |
+| Review & Rating | — | 📝 Gửi | 📝 Gửi | 👁 Xem | ⏰ Auto-Calc | — |
 
 **Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · ⏰ Tự động · 🤖 Tích hợp AI · 📝 Tạo/Nộp · 📩 Callback R/W Đọc-Ghi R Chỉ đọc
