@@ -152,6 +152,101 @@ Features/
 │       └── BankWebhookVerifier.cs          # Xác thực HMAC webhook ngân hàng
 ```
 
+### 2.5 Real-time Chat (SignalR & Redis Backplane)
+
+```mermaid
+graph TD
+    UserA["📱 Agency Client"] -->|WebSocket Connection| API1["Web API Server 1"]
+    UserB["🖥️ Supplier Client"] -->|WebSocket Connection| API2["Web API Server 2"]
+    
+    API1 <-->|Pub/Sub Message Routing| RedisBackplane[("⚡ Redis Backplane")]
+    API2 <-->|Pub/Sub Message Routing| RedisBackplane
+```
+
+*   **SignalR Hub:** Lớp trung gian quản lý kết nối WebSocket. Client gửi tin nhắn qua `ChatHub.SendMessage(bookingId, text)`.
+*   **Redis Backplane:** Khi hệ thống có nhiều instance API chạy sau Load Balancer, Redis đóng vai trò trung chuyển tin nhắn. Hub tự động publish event lên Redis, các instance khác subscribe và chuyển tin nhắn xuống client tương ứng.
+*   **Cấu trúc thư mục code:**
+    ```text
+    Infrastructure/
+    └── Identity/
+        └── ChatHub.cs                      # SignalR Hub xử lý kết nối và điều hướng
+    Features/
+    ├── Chats/
+    │   ├── Commands/
+    │   │   └── SendMessageCommand.cs       # Lưu message và trigger SignalR push
+    │   └── Queries/
+    │       └── GetChatHistoryQuery.cs      # Lấy lịch sử chat theo BookingId
+    ```
+
+### 2.6 Review & Rating (Anti-Spam & Auto-Calculate)
+
+*   **Anti-Spam Validation:** Trước khi ghi nhận review vào DB, FluentValidation kiểm tra:
+    1. Đơn hàng phải tồn tại và thuộc về Agency thực hiện đánh giá.
+    2. Trạng thái đơn hàng phải là `COMPLETED`.
+    3. Trực quan hóa qua khóa duy nhất (Unique Index) cặp `BookingId` - không cho phép đánh giá lần 2.
+*   **Auto-Calculate average rating:** Để tránh việc mỗi lần hiển thị sản phẩm đều tính `AVG(Rating)` làm chậm DB, ta dùng Hangfire để bất đồng bộ hóa việc tính toán.
+    ```text
+    [Review Created Event] 
+           │
+           ▼
+    [Outbox Message] 
+           │
+           ▼
+    [Hangfire: UpdateSupplierRatingJob] 
+           │
+           ▼
+    [UPDATE Suppliers SET AverageRating = (AVG) WHERE Id = SupplierId]
+    ```
+*   **Cấu trúc thư mục code:**
+    ```text
+    Features/
+    ├── Reviews/
+    │   ├── Commands/
+    │   │   └── CreateReviewCommand.cs      # Gửi đánh giá + Trigger Event
+    │   ├── Queries/
+    │   │   └── GetSupplierReviewsQuery.cs   # Xem danh sách reviews của Supplier
+    │   └── EventHandlers/
+    │       └── ReviewCreatedHandler.cs     # Enqueue job tính lại trung bình
+    ```
+
+### 2.7 Trợ Lý AI Báo Giá & Tạo Combo Tự Động (AI Travel Agent Assistant)
+
+*   **Mô tả luồng xử lý RAG & Function Calling:**
+    ```text
+    User Chat prompt: "Combo đi Đà Lạt 3N2Đ cho 2 người..."
+           │
+           ▼
+    [Web API: AI Chat Handler] 
+           │
+           ▼
+    [LLM Engine: Gemini API (System Instruction)] 
+           │ (LLM quyết định gọi Function)
+           ▼
+    [Function Calling: search_inventory(destination, dates, guests)]
+           │
+           ▼
+    [App Service: SearchInventoryQuery] (Lấy giá sỉ gốc)
+           │
+           ▼
+    [Logic: Apply Markup & Calculate Combo] (Áp markup của Agency)
+           │
+           ▼
+    [LLM Engine: Sinh câu trả lời định dạng JSON combo]
+           │
+           ▼
+    [Mobile UI: Render 3 Combos kèm nút Hold Booking]
+    ```
+*   **Cấu trúc thư mục code:**
+    ```text
+    Features/
+    ├── AiAssistant/
+    │   ├── Commands/
+    │   │   └── SendAiChatCommand.cs        # Xử lý hội thoại NLP với LLM
+    │   └── Services/
+    │       ├── IAiModelService.cs          # Interface kết nối LLM (Gemini)
+    │       └── AiModelService.cs           # Cài đặt HttpClient gọi API Gemini
+    ```
+
 ---
 
 ## ⚡ 3. Nâng Cấp Kiến Trúc
@@ -282,6 +377,25 @@ erDiagram
         datetime created_at
         datetime processed_at
     }
+
+    ChatMessage {
+        uuid id PK
+        uuid booking_id FK
+        uuid sender_id FK
+        string message_text
+        string attachment_url
+        datetime sent_at
+    }
+
+    Review {
+        uuid id PK
+        uuid booking_id FK
+        uuid agency_id FK
+        uuid supplier_id FK
+        int rating
+        string comment
+        datetime created_at
+    }
 ```
 
 ### Index mới cần thiết
@@ -292,6 +406,9 @@ erDiagram
 | `Invoice` | `agency_id, issued_at` | B-Tree | Tìm hóa đơn theo đại lý + ngày |
 | `OutboxMessage` | `is_processed, created_at` | B-Tree Partial | Job poll chỉ lấy message chưa xử lý |
 | `CartItem` | `user_id` | B-Tree | Mỗi user có 1 giỏ hàng |
+| `ChatMessage` | `booking_id, sent_at` | B-Tree | Load lịch sử chat nhanh theo phòng/booking |
+| `Review` | `supplier_id, created_at` | B-Tree | Lấy danh sách reviews mới nhất của Supplier |
+| `Review` | `booking_id` | Unique B-Tree | Chống spam: Đảm bảo 1 booking chỉ được review 1 lần |
 
 ---
 
@@ -305,6 +422,8 @@ erDiagram
 | **Sprint 4** | VietQR Auto-Credit | Thêm BankWebhookController, VietQR service | Thấp — tương tự VNPay IPN flow |
 | **Sprint 5** | Invoicing & VAT | Thêm Invoice entity, EInvoice API client, auto-generate job | Trung bình — phụ thuộc API bên thứ ba |
 | **Sprint 6** | Sub-Agent / CTV | Thêm SubAgent entity, Commission logic, report query | Thấp — mở rộng từ Agency/Wallet đã có |
+| **Sprint 7** | Real-time Chat + Rating | Thêm ChatHub, Redis Backplane, Review entity, unique checks | Trung bình — tích hợp socket & async jobs |
+| **Sprint 8** | Trợ lý AI Báo Giá | Tích hợp HttpClient Gemini API, NLP parsing & Function Calling | Trung bình — quản lý API token, Prompt tuning |
 
 ---
 
@@ -318,3 +437,6 @@ erDiagram
 | **Cache-Aside** | Redis cache kết quả tìm kiếm, giảm DB query |
 | **PayOS / Casso SDK** | Bank Webhook cho VietQR auto-credit |
 | **EInvoice API** | Xuất hóa đơn VAT điện tử tự động |
+| **Microsoft.AspNetCore.SignalR** | Xây dựng kết nối WebSocket real-time phục vụ Chat Hub |
+| **StackExchange.Redis (Backplane)** | Message broker đồng bộ tin nhắn Chat giữa các Web API server chạy song song |
+| **Gemini API / Semantic Kernel** | Tích hợp mô hình ngôn ngữ lớn xử lý yêu cầu combo bằng ngôn ngữ tự nhiên |

@@ -47,6 +47,7 @@ graph TB
         SYS["⏰ System / Hangfire"]
         VNPAY["💳 VNPay Gateway"]
         EXT["🚌 External Transport"]
+        AI_AST["🤖 AI Assistant"]
     end
 ```
 
@@ -59,6 +60,7 @@ graph TB
 | 5 | **External Transport** | Bên ngoài | Đối tác vận chuyển (nhà xe Phương Trang, hãng bay) kết nối qua API |
 | 6 | **System / Hangfire** | Hệ thống | Tác vụ nền chạy tự động (auto-cancel, đồng bộ đặt vé đối tác, nhắc KYC) |
 | 7 | **VNPay Gateway** | Bên ngoài | Cổng thanh toán — gọi IPN callback khi nạp tiền thành công |
+| 8 | **AI Assistant** | Hệ thống | Trợ lý AI hỗ trợ tự động tìm kiếm, báo giá và tạo combo bằng ngôn ngữ tự nhiên |
 
 ---
 
@@ -287,6 +289,29 @@ graph LR
 2. Chuyển hướng sang trang thanh toán VNPay
 3. Khách hoàn tất thanh toán
 4. VNPay gọi IPN callback → hệ thống xác minh hash → nạp ví đại lý → ghi Wallet Ledger
+
+---
+
+### 3.8 🤖 Trợ Lý AI Báo Giá & Tạo Combo Tự Động (AI Travel Agent Assistant)
+
+**Vai trò:** Actor hệ thống (Phase 2). Trích xuất ý định của người dùng bằng ngôn ngữ tự nhiên, tích hợp API nội bộ để tính toán giá, markup và tạo combo đặt chỗ tự động.
+
+**Chức năng:**
+
+| # | Chức năng | Trigger / Mô tả |
+|---|-----------|-----------------|
+| 1 | Phân tích yêu cầu combo | Nhận câu lệnh chatbot từ Agency Staff → Trích xuất điểm đi, điểm đến, ngày đi, ngân sách, số khách |
+| 2 | Báo giá & tạo combo tự động | Gọi API search nội bộ, tính toán giá sỉ + markup, đề xuất 3 combo tối ưu kèm nút Giữ chỗ |
+| 3 | Tự động giữ chỗ | Gọi API Hold Booking khi người dùng ấn nút chọn trên giao diện chat của AI |
+
+```mermaid
+graph LR
+    AI_AST["🤖 AI Assistant"]
+
+    AI_AST --> UC_NLP["Phân tích ngôn ngữ tự nhiên (NLP)"]
+    AI_AST --> UC_VAL["Gợi ý & báo giá Combo"]
+    AI_AST --> UC_AUTO_HOLD["Kích hoạt Giữ chỗ (Hold)"]
+```
 
 ---
 
@@ -631,21 +656,23 @@ graph LR
 
 ## 6. Ma Trận Actor × Module
 
-| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System | VNPay |
-|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| KYC (Quản lý đại lý) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — |
-| Search (Tìm kiếm) | — | ✅ R/W | ✅ R | — | — | — | — |
-| Booking (Đặt chỗ) | 👁 Xem all | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Approve | — | ⏰ Cancel | — |
-| Wallet (Ví) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — |
-| Payment (VNPay) | — | ✅ | ✅ | — | — | — | 📩 IPN |
-| Inventory (Kho) | ✅ | — | — | ✅ | — | — | — |
-| Voucher & Vận chuyển | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — |
-| Claim (Khiếu nại) | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — |
-| Report & Config | ✅ | — | — | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System | VNPay | AI Assistant |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| KYC (Quản lý đại lý) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — | — |
+| Search (Tìm kiếm) | — | ✅ R/W | ✅ R | — | — | — | — | 🤖 Hỗ trợ tìm |
+| Booking (Đặt chỗ) | 👁 Xem all | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Approve | — | ⏰ Cancel | — | 🤖 Auto Hold |
+| Wallet (Ví) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — | — |
+| Payment (VNPay) | — | ✅ | ✅ | — | — | — | 📩 IPN | — |
+| Inventory (Kho) | ✅ | — | — | ✅ | — | — | — | — |
+| Voucher & Vận chuyển | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — | — |
+| Claim (Khiếu nại) | ✅ Resolve | ✅ Create | ✅ Create | — | — | — | — | — |
+| Report & Config | ✅ | — | — | — | — | — | — | — |
+| Notification | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| Chat (SignalR) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — | — |
+| Review & Rating | — | 📝 Gửi | 📝 Gửi | 👁 Xem | — | ⏰ Auto-Calc | — | — |
 
-**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🚌 Kết nối API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
+**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Nộp · ⏰ Tự động · 🤖 Tích hợp AI · 🚌 Kết nối API · 📩 Callback · R/W Đọc-Ghi · R Chỉ đọc
 
 ---
 

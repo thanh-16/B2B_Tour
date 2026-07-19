@@ -8,10 +8,10 @@
 
 ## 📊 Tổng quan Phase 2
 
-*   **Use Case mới bổ sung:** 14 UC
-*   **Module mới:** Invoicing & VAT (M08), Shopping Cart (M05)
-*   **Actor mới:** Sub-Agent / CTV (mở rộng từ Agency Staff)
-*   **Tổng UC sau Phase 2:** 45 (MVP) + 14 (Scale-up) = **59 UC**
+*   **Use Case mới bổ sung:** 23 UC (bao gồm 9 UC mới cho Chat, Review/Rating và Trợ lý AI)
+*   **Module mới:** Invoicing & VAT (M08), Shopping Cart (M05), Real-time Chat, Review & Rating, AI Assistant
+*   **Actor mới:** Sub-Agent / CTV, AI Assistant
+*   **Tổng UC sau Phase 2:** 45 (MVP) + 23 (Scale-up) = **68 UC**
 
 ---
 
@@ -164,16 +164,104 @@ graph LR
 
 ---
 
-## 🤖 Hướng Phát Triển AI (Nghiên Cứu Dài Hạn)
+### Module mới: Chat thời gian thực (Real-time Chat — SignalR)
 
-Các tính năng AI dưới đây thuộc hướng nghiên cứu dài hạn, có thể đưa vào phần **"Hướng phát triển tương lai"** trong báo cáo đồ án:
+> **Lý do chuyển sang Phase 2:** Đòi hỏi kết nối Socket thời gian thực (SignalR) và Redis Backplane để phân phối tin nhắn giữa các Web API Server độc lập. Ở Phase 1, luồng đặt chỗ offline qua điện thoại hoặc in-app notification là đủ.
 
-| # | Tính năng AI | Mô tả | Công nghệ |
+```mermaid
+graph LR
+    subgraph Chat["💬 Chat thời gian thực"]
+        UC74["UC-74: Gửi tin nhắn tức thời"]
+        UC75["UC-75: Nhận tin nhắn tức thời"]
+        UC76["UC-76: Xem lịch sử chat theo Booking"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC74
+    AM --> UC75
+    AM --> UC76
+    AS["👤 Agency Staff"] --> UC74
+    AS --> UC75
+    AS --> UC76
+    SA["📦 Supplier Admin"] --> UC74
+    SA --> UC75
+    SA --> UC76
+```
+
+| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
 |---|---|---|---|
-| 1 | **AI Travel Agent Assistant** | Chat AI tạo combo du lịch bằng ngôn ngữ tự nhiên + Function Calling gọi API tìm kiếm nội bộ | LLM (Gemini/GPT) + RAG |
-| 2 | **AI OCR Auto-KYC** | Tự động quét ảnh Giấy phép lữ hành, trích xuất thông tin, đối chiếu CSDL doanh nghiệp quốc gia | Vision LLM + OCR |
-| 3 | **AI Smart Markup Optimizer** | Gợi ý tỷ lệ Markup tối ưu theo mùa vụ, xu hướng thị trường, dữ liệu lịch sử | Machine Learning |
-| 4 | **AI Fraud Detection** | Phát hiện hành vi gian lận: spam hold booking, lạm dụng hoàn tiền, tài khoản bất thường | Anomaly Detection |
+| UC-74 | Agency Manager, Staff, Supplier Admin | Gửi tin nhắn text, hình ảnh đến đối tác liên quan đến 1 đơn hàng cụ thể | Hệ thống tự xác định người nhận dựa vào BookingId |
+| UC-75 | Agency Manager, Staff, Supplier Admin | Nhận tin nhắn đẩy tức thì (Real-time Push) qua SignalR kết nối mở | Chạy ngầm trong App, nếu app đóng thì chuyển hướng qua Push Notification |
+| UC-76 | Agency Manager, Staff, Supplier Admin | Xem lại toàn bộ lịch sử tin nhắn của đơn đặt chỗ đó | Chỉ hiển thị nếu user thuộc Agency sở hữu đơn hoặc Supplier cung cấp dịch vụ đó |
+
+---
+
+### Module mới: Đánh giá & Phản hồi (Review & Rating)
+
+> **Lý do chuyển sang Phase 2:** Đòi hỏi quy tắc kiểm duyệt nghiêm ngặt (anti-spam) để tránh việc các đối tác tự rate 5 sao hoặc dìm hàng nhau. Cần kiểm tra trạng thái đơn hàng check-out thành công trước khi cho phép Review.
+
+```mermaid
+graph LR
+    subgraph Review["⭐ Đánh giá & Phản hồi"]
+        UC77["UC-77: Gửi đánh giá dịch vụ"]
+        UC78["UC-78: Xem danh sách đánh giá"]
+        UC79["UC-79: Tự động tính toán điểm uy tín"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC77
+    AS["👤 Agency Staff"] --> UC77
+    AM --> UC78
+    AS --> UC78
+    SA["📦 Supplier Admin"] --> UC78
+    SYS["⏰ System / Hangfire"] --> UC79
+```
+
+| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
+|---|---|---|---|
+| UC-77 | Agency Manager, Staff | Gửi đánh giá (Rating từ 1-5 sao + Comment) cho dịch vụ sau khi sử dụng | Chỉ được rate khi trạng thái đơn = `COMPLETED` và mỗi BookingId chỉ được rate 1 lần |
+| UC-78 | Tất cả | Xem danh sách đánh giá của một Nhà cung cấp cụ thể | Công khai điểm trung bình và các nhận xét |
+| UC-79 | System / Hangfire | Tự động tính toán lại điểm rating trung bình của Supplier theo ngày | Chạy ngầm định kỳ bằng Hangfire, lưu trữ điểm trung bình vào bảng Supplier |
+
+---
+
+### Module mới: Trợ Lý AI Báo Giá & Tạo Combo (AI Assistant)
+
+> **Lý do chuyển sang Phase 2:** Tính năng nâng cao hỗ trợ ra quyết định (DSS). Đòi hỏi tích hợp LLM APIs (Gemini/GPT) và kỹ thuật RAG trên kho dịch vụ của sàn. Chỉ thực hiện khi lõi Inventory và Core Search (Phase 1) đã chạy mượt.
+
+```mermaid
+graph LR
+    subgraph AIAssistant["🤖 Trợ Lý AI Báo Giá & Tạo Combo"]
+        UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
+        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
+        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
+    end
+
+    AM["🏢 Agency Manager"] --> UC80
+    AM --> UC81
+    AM --> UC82
+    AS["👤 Agency Staff"] --> UC80
+    AS --> UC81
+    AS --> UC82
+    AI["🤖 AI Assistant"] -.-> |"Phân tích & Tìm kiếm"| UC81
+    AI -.-> |"Auto Hold API"| UC82
+```
+
+| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
+|---|---|---|---|
+| UC-80 | Agency Manager, Staff | Nhập câu lệnh chatbot yêu cầu combo dịch vụ (Ví dụ: "Combo đi Nha Trang 3N2Đ cho 2 người lớn...") | Text-based chat UI trong App |
+| UC-81 | Agency Manager, Staff, AI Assistant | AI phân tích yêu cầu (NLP), tự động gọi API Search nội bộ, tính toán giá đã cộng markup và đề xuất 3 combo | Đề xuất hiển thị đầy đủ chi tiết, giá tiền đã cộng markup của chính đại lý đó |
+| UC-82 | Agency Manager, Staff, AI Assistant | Người dùng nhấn nút đặt trong ô chat AI, AI gọi API Hold Booking để giữ chỗ trực tiếp | Trigger luồng Hold Booking cốt lõi |
+
+---
+
+## 🤖 Hướng Phát Triển AI & Nghiên Cứu Khác
+
+Các tính năng AI và kỹ thuật nâng cao hỗ trợ báo cáo đồ án:
+
+| # | Tính năng nâng cao | Mô tả | Công nghệ |
+|---|---|---|---|
+| 1 | **AI OCR Auto-KYC** | Tự động quét ảnh Giấy phép lữ hành, trích xuất thông tin, đối chiếu CSDL doanh nghiệp quốc gia | Vision LLM + OCR |
+| 2 | **AI Smart Markup Optimizer** | Gợi ý tỷ lệ Markup tối ưu theo mùa vụ, xu hướng thị trường, dữ liệu lịch sử | Machine Learning |
+| 3 | **AI Fraud Detection** | Phát hiện hành vi gian lận: spam hold booking, lạm dụng hoàn tiền, tài khoản bất thường | Anomaly Detection |
 
 ---
 
@@ -188,17 +276,22 @@ Thực hiện từng bước, mỗi bước là 1 sprint (2 tuần), ưu tiên t
 | **Sprint 3** | Hóa đơn VAT điện tử | 3 UC | Yêu cầu pháp lý bắt buộc cho doanh nghiệp |
 | **Sprint 4** | Cổng CTV & Chia hoa hồng | 3 UC | Mở rộng mạng lưới phân phối, tăng số đại lý gián tiếp |
 | **Sprint 5** | Thông báo đa kênh (Zalo/Telegram) | 1 UC | Tăng tỷ lệ chuyển đổi đơn hàng thành công |
+| **Sprint 6** | Chat thời gian thực + Rate & Review | 6 UC | Cải thiện kết nối và tính minh bạch trên sàn B2B |
+| **Sprint 7** | Trợ lý AI Báo Giá & Tạo Combo | 3 UC | Tính năng đột phá giúp tăng tỷ lệ chốt đơn tự động |
 
 ---
 
 ## 📊 Ma Trận Actor × Module (Phase 2 — Bổ sung)
 
-| Module Phase 2 | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | Bank Webhook |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Shopping Cart (Combo) | — | ✅ | ✅ | — | — | — |
-| Invoicing & VAT | ✅ Generate | 👁 View + Download | — | — | ⏰ Auto-generate | — |
-| Sub-Agent / CTV | — | ✅ Quản lý | — | — | — | — |
-| VietQR Auto-Credit | — | ✅ | ✅ | — | — | 📩 Webhook |
-| Thông báo đa kênh | — | — | — | — | ⏰ Auto-send | — |
+| Module Phase 2 | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | Bank Webhook | AI Assistant |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Shopping Cart (Combo) | — | ✅ | ✅ | — | — | — | — |
+| Invoicing & VAT | ✅ Generate | 👁 View + Download | — | — | ⏰ Auto-generate | — | — |
+| Sub-Agent / CTV | — | ✅ Quản lý | — | — | — | — | — |
+| VietQR Auto-Credit | — | ✅ | ✅ | — | — | 📩 Webhook | — |
+| Thông báo đa kênh | — | — | — | — | ⏰ Auto-send | — | — |
+| Chat (SignalR Hub) | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — |
+| Review & Rating | — | 📝 Gửi | 📝 Gửi | 👁 Xem | ⏰ Auto-Calc | — | — |
+| AI Agent Assistant | — | ✅ Chat | ✅ Chat | — | — | — | 🤖 Generate |
 
-**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · ⏰ Tự động · 📩 Callback
+**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · ⏰ Tự động · 🤖 Tích hợp AI · 📝 Tạo/Nộp · 📩 Callback R/W Đọc-Ghi R Chỉ đọc
