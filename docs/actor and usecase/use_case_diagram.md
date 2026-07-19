@@ -10,7 +10,7 @@
 
 Để hội đồng dễ theo dõi và phản biện, sơ đồ Use Case của dự án được chia làm 2 phần theo đúng lộ trình phát triển:
 
-### 1.1 Sơ đồ Phase 1: MVP & Trợ lý AI (49 Use Cases)
+### 1.1 Sơ đồ Phase 1: MVP & Trợ lý AI (50 Use Cases)
 
 ```mermaid
 graph LR
@@ -103,6 +103,7 @@ graph LR
         UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
         UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI (Không tự Hold)"]
         UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
+        UC84["UC-84: Quét QR check-in đón khách"]
     end
 
     %% CONNECTIONS
@@ -111,7 +112,7 @@ graph LR
     AM --> UC14
     AS --> UC80 & UC81 & UC82 & UC83
     AS & AM --> UC01 & UC13 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56
-    SA --> UC01 & UC27 & UC28 & UC30 & UC31 & UC19 & UC20 & UC32 & UC33 & UC44 & UC55
+    SA --> UC01 & UC27 & UC28 & UC30 & UC31 & UC19 & UC20 & UC32 & UC33 & UC44 & UC55 & UC84
     SYS --> UC21 & UC37
     VNPAY --> UC26
     EXT --> UC37 & UC38
@@ -214,13 +215,14 @@ graph LR
 *   **UC-82:** Nhận link đặt giữ chỗ từ chat AI (Không tự động kích hoạt giữ chỗ).
 
 ### Module 6: Động Cơ Đặt Chỗ (Booking Engine)
-*   **UC-16:** Đặt giữ chỗ tạm thời (Hold PNR) - đếm ngược 15 phút.
+*   **UC-16:** Đặt giữ chỗ tạm thời (Hold PNR) kèm theo khai báo thông tin hành khách - đếm ngược 15 phút.
 *   **UC-17:** Thanh toán đơn hàng (Pay) - trừ số dư ví đại lý.
 *   **UC-18:** Xem danh sách đơn đặt chỗ toàn sàn.
 *   **UC-19:** Duyệt đơn đặt chỗ On-Request.
 *   **UC-20:** Từ chối đơn đặt chỗ On-Request.
 *   **UC-21:** Auto-cancel đơn giữ chỗ quá hạn.
 *   **UC-53:** Hủy đơn hàng HELD chủ động trước khi hết 15 phút.
+*   **UC-84:** Xác nhận đón khách (Check-in) - Quét QR cho dịch vụ nội bộ hoặc Đối chiếu thông tin cho nhà xe bên thứ 3.
 
 ### Module 7: Ví Tài Chính (Wallet & Payment)
 *   **UC-22:** Xem số dư ví đại lý và hạn mức tín dụng công nợ.
@@ -308,7 +310,7 @@ Bảng phân phối quyền hạn kích hoạt và tương tác của các tác 
 | **KYC (04, 07-12)** | ✅ Duyệt | 📝 Nộp | — | — | ⏰ Suspend | — | — |
 | **Staff (57, 58)** | — | ✅ | — | — | — | — | — |
 | **Search/Markup (13-15, 83)**| — | ✅ R/W/Export | ✅ R/Export (Ẩn UC14) | — | — | — | 🤖 Gợi ý |
-| **Booking (16-21, 53)** | 👁 Xem | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Duyệt | ⏰ Hủy | — | 🤖 Link đặt |
+| **Booking (16-21, 53, 84)** | 👁 Xem | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Duyệt/Check-in | ⏰ Hủy | — | 🤖 Link đặt |
 | **Wallet (22-24, 54)** | ✅ Credit | 👁 Xem | 👁 Xem | — | — | — | — |
 | **Payment (25, 26, 71, 72)**| — | ✅ | ✅ | — | — | 📩 Webhook | — |
 | **Inventory (27-31)** | ✅ | — | — | ✅ | — | — | — |

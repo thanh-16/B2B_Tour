@@ -8,9 +8,9 @@
 
 ## 📊 Tổng quan MVP
 
-*   **Tổng số Use Case MVP:** 49 UC (bao gồm 3 UC mới của Trợ lý AI và 1 UC xuất báo giá mới)
+*   **Tổng số Use Case MVP:** 55 UC (bao gồm 3 UC của Trợ lý AI, 1 UC xuất báo giá, 1 UC check-in đón khách và 5 UC Giỏ hàng combo)
 *   **Số Actor:** 8 (4 con người + 4 hệ thống/đối tác)
-*   **Số Module triển khai:** 13 / 15 module (thêm AI Assistant, trừ Invoicing & VAT và Shopping Cart chuyển sang Phase 2)
+*   **Số Module triển khai:** 14 / 15 module (thêm AI Assistant và Shopping Cart, chỉ hoãn Invoicing & VAT sang Phase 2)
 
 ---
 
@@ -103,11 +103,19 @@ graph LR
         UC50["UC-50: Xuất báo cáo Excel"]
         UC52["UC-52: Cập nhật cấu hình hệ thống"]
 
-        %% AI Assistant (Đưa từ Phase 2 về Phase 1)
+        %% AI Assistant
         UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
         UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
         UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI (Không tự Hold)"]
         UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
+        UC84["UC-84: Quét QR check-in đón khách"]
+
+        %% Shopping Cart (Đưa từ Phase 2 về Phase 1)
+        UC60["UC-60: Thêm dịch vụ vào giỏ combo"]
+        UC61["UC-61: Xóa dịch vụ khỏi giỏ combo"]
+        UC62["UC-62: Xem giỏ hàng combo"]
+        UC63["UC-63: Hold toàn bộ combo (Saga)"]
+        UC64["UC-64: Thanh toán combo 1 chạm"]
     end
 
     %% ──────────────────────────────────────
@@ -150,6 +158,11 @@ graph LR
     AM --> UC55
     AM --> UC56
     AM --> UC83
+    AM --> UC60
+    AM --> UC61
+    AM --> UC62
+    AM --> UC63
+    AM --> UC64
 
     AS --> UC01
     AS --> UC13
@@ -166,6 +179,11 @@ graph LR
     AS --> UC55
     AS --> UC56
     AS --> UC83
+    AS --> UC60
+    AS --> UC61
+    AS --> UC62
+    AS --> UC63
+    AS --> UC64
 
     SA --> UC01
     SA --> UC27
@@ -323,6 +341,7 @@ graph LR
         UC19["UC-19: Duyệt đơn On-Request"]
         UC20["UC-20: Từ chối đơn On-Request"]
         UC21["UC-21: Auto-cancel quá hạn"]
+        UC84["UC-84: Xác nhận đón khách (Check-in)"]
     end
 
     AS["👤 Agency Staff"] --> UC16
@@ -602,6 +621,38 @@ graph LR
 | UC-80 | Agency Manager, Staff | Nhập câu lệnh chatbot yêu cầu combo dịch vụ (Ví dụ: "Combo đi Đà Lạt 3N2Đ cho 2 người...") | Text-based chat UI trong App |
 | UC-81 | Agency Manager, Staff, AI Assistant | AI phân tích yêu cầu (NLP), tự động gọi API Search nội bộ, tính toán giá đã cộng markup và đề xuất 3 combo | Đề xuất hiển thị đầy đủ chi tiết, giá tiền đã cộng markup của chính đại lý đó |
 | UC-82 | Agency Manager, Staff | Người dùng nhận link/nút bấm tạo đặt chỗ trong ô chat và tự tay nhấn nút để giữ chỗ | **Trợ lý AI không được tự kích hoạt giữ chỗ** để tránh spam tồn kho. Người dùng bắt buộc phải tự tay xác nhận đặt chỗ. |
+
+
+---
+
+### Module: Giỏ hàng & Thanh toán gộp (Shopping Cart)
+
+> **Mục tiêu:** Hỗ trợ đại lý gom nhiều dịch vụ (vé xe, vé máy bay, khách sạn, tour) thành một hành trình combo hoàn chỉnh để giữ chỗ và thanh toán đồng thời (1 chạm) nhằm nâng cao hiệu suất bán hàng.
+
+```mermaid
+graph LR
+    subgraph ShoppingCart["🛒 Giỏ hàng & Thanh toán gộp"]
+        UC60["UC-60: Thêm dịch vụ vào giỏ"]
+        UC61["UC-61: Xóa dịch vụ khỏi giỏ"]
+        UC62["UC-62: Xem chi tiết giỏ hàng"]
+        UC63["UC-63: Hold toàn bộ combo (Saga)"]
+        UC64["UC-64: Thanh toán combo 1 chạm"]
+    end
+
+    AS["👤 Agency Staff"] --> UC60 & UC61 & UC62 & UC63 & UC64
+    AM["🏢 Agency Manager"] --> UC60 & UC61 & UC62 & UC63 & UC64
+
+    UC63 -.-> |"«include»"| LOCK["Multi-Lock kho hàng"]
+    UC64 -.-> |"«include»"| DEBIT["Giao dịch thanh toán gộp một lần"]
+```
+
+| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
+|---|---|---|---|
+| UC-60 | Agency Manager, Staff | Thêm các dịch vụ đơn lẻ (xe khách, khách sạn, tour) vào giỏ hàng chung để tạo thành combo | Dịch vụ được thêm phải có sẵn slot trống ở ngày chọn |
+| UC-61 | Agency Manager, Staff | Loại bỏ dịch vụ khỏi giỏ hàng combo trước khi tiến hành giữ chỗ | — |
+| UC-62 | Agency Manager, Staff | Xem danh sách các dịch vụ trong giỏ hàng hiện tại, tổng giá trị tạm tính (đã cộng markup) | Giá hiển thị tự động cập nhật theo tỷ lệ markup đã cài |
+| UC-63 | Agency Manager, Staff | **Unified Hold (Giữ chỗ gộp):** Kích hoạt quy trình Saga để khóa tất cả slot kho hàng của các dịch vụ trong giỏ đồng thời | Nếu có 1 dịch vụ thất bại -> Rollback toàn bộ các dịch vụ đã giữ chỗ trước đó (Compensating Transaction) |
+| UC-64 | Agency Manager, Staff | **Thanh toán gộp (1 chạm):** Khấu trừ tổng số tiền của toàn bộ combo từ ví đại lý cùng lúc và xuất E-Voucher | Thực hiện giao dịch nguyên tử (Atomic). Nếu trừ tiền thành công sẽ chuyển trạng thái của toàn bộ đơn thành PAID |
 
 ---
 

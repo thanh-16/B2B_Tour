@@ -59,6 +59,7 @@ Tầng Domain chứa logic nghiệp vụ thuần túy, không phụ thuộc fram
 | Entity | Vai trò | Domain Methods quan trọng |
 | :--- | :--- | :--- |
 | **Booking** | Đơn đặt chỗ | `Hold()` → validate + đổi status HELD. `Pay()` → validate balance + đổi PAID. `Cancel()` → hoàn slot. `Expire()` → auto-cancel. |
+| **BookingPassenger** | Hành khách định danh | Chứa dữ liệu của từng khách lẻ để đặt vé và check-in (Tên, CCCD, SĐT, Ngày sinh). |
 | **Wallet** | Ví tài chính đại lý | `Credit(amount)` → cộng balance + tạo LedgerEntry. `Debit(amount)` → kiểm tra đủ tiền + trừ balance + tạo LedgerEntry. |
 | **WalletLedger** | Sổ cái giao dịch | Immutable — chỉ INSERT, không bao giờ UPDATE/DELETE. Mỗi entry lưu `balance_after` để audit. |
 | **InventorySlot** | Slot chỗ theo ngày | `DecrementSlot()` → giảm available_slots + tăng version. `RestoreSlot()` → hoàn khi hủy đơn. |
@@ -87,12 +88,12 @@ Features/
 │
 ├── Bookings/
 │   ├── Commands/
-│   │   ├── HoldBookingCommand.cs       → Redis Lock + Deduct Slot + Create Booking
+│   │   ├── HoldBookingCommand.cs       → Redis Lock + Deduct Slot + Create Booking & Passengers
 │   │   ├── PayBookingCommand.cs        → Debit Wallet + Ledger + Trigger Voucher
 │   │   └── CancelBookingCommand.cs     → Restore Slot + Cancel Booking
 │   └── Queries/
 │       ├── GetBookingListQuery.cs       → Phân trang, lọc theo status/agency
-│       └── GetBookingDetailQuery.cs     → Chi tiết 1 booking kèm voucher
+│       └── GetBookingDetailQuery.cs     → Chi tiết 1 booking kèm voucher & passengers
 │
 ├── Wallets/
 │   ├── Commands/
@@ -115,6 +116,15 @@ Features/
 │   │   └── ...
 │   └── Queries/
 │       └── SearchInventoryQuery.cs     → Tìm kiếm (Staff bị ẩn markup)
+│
+├── Carts/
+│   ├── Commands/
+│   │   ├── AddToCartCommand.cs         → Thêm dịch vụ vào giỏ hàng
+│   │   ├── RemoveFromCartCommand.cs    → Xóa dịch vụ khỏi giỏ hàng
+│   │   ├── UnifiedHoldCartCommand.cs   → Quy trình Saga giữ chỗ toàn bộ combo
+│   │   └── PayCartCommand.cs           → Thanh toán gộp combo 1 chạm
+│   └── Queries/
+│       └── GetCartQuery.cs             → Xem chi tiết giỏ hàng hiện tại
 │
 └── ... (tương tự cho Agencies, Claims, Notifications, Vouchers)
 ```
@@ -144,6 +154,7 @@ Features/
 | `AuthController` | POST /login, POST /refresh, POST /change-password | Public / Authenticated |
 | `AgencyController` | POST /register, GET /list, PUT /{id}/kyc/approve | Admin / Manager |
 | `BookingController` | POST /hold, POST /{id}/pay, DELETE /{id}, GET /list | Manager, Staff |
+| `CartController` | POST /cart/add, DELETE /cart/remove, GET /cart, POST /cart/hold, POST /cart/pay | Manager, Staff |
 | `WalletController` | GET /balance, GET /history, POST /credit, POST /debit | Admin / Manager, Staff |
 | `PaymentController` | POST /vnpay/create-url, POST /vnpay/ipn | Manager, Staff / Public |
 | `InventoryController` | GET /search, POST /, PUT /{id}/slots, DELETE /{id}, POST /export-quotation | Search: All (Staff ẩn markup) / Admin, Supplier / All (Báo giá) |
@@ -160,16 +171,16 @@ Features/
 ### 3.1 Luồng Giữ Chỗ - Hold Booking
 
 ```text
-1. Client gửi HoldBookingCommand
-2. ValidationBehavior: kiểm tra input hợp lệ
+1. Client gửi HoldBookingCommand (kèm danh sách Passengers)
+2. ValidationBehavior: kiểm tra input hợp lệ (Tên không dấu, định dạng CCCD/Hộ chiếu, SĐT...)
 3. Handler:
    a. Kiểm tra Agency KYC = APPROVED
    b. Kiểm tra Wallet.Balance >= TotalAmount
    c. Redis: AcquireLock("lock:slot:{slotId}")   ← Chống Race Condition
    d. DB: SELECT slot WHERE available_slots > 0
    e. Domain: slot.DecrementSlot()                ← OCC version check
-   f. Domain: Booking.Hold(agency, slot, amount)
-   g. DB: INSERT Booking + UPDATE Slot (trong 1 Transaction)
+   f. Domain: Booking.Hold(agency, slot, amount, passengers)
+   g. DB: INSERT Booking + INSERT BookingPassengers + UPDATE Slot (trong 1 Transaction)
    h. Redis: ReleaseLock (trong finally block)
    i. Hangfire: Schedule AutoCancelJob(bookingId, 15min)
    j. Push: Gửi thông báo "Đặt chỗ thành công, thanh toán trong 15 phút"
@@ -227,6 +238,33 @@ Features/
 * Lưu ý: AI không tự kích hoạt giữ chỗ trực tiếp để tránh tình trạng spam khóa kho (Hold) tự động.
 ```
 
+### 3.5 Luồng Giỏ hàng Combo & Thanh toán gộp (Saga Orchestration)
+
+```text
+1. Client gửi UnifiedHoldCartCommand (danh sách item: vé xe slotA, khách sạn slotB, tour slotC + danh sách Passengers)
+2. Handler khởi tạo Saga Orchestrator:
+   a. Lần lượt thực hiện giữ chỗ (Hold) cho từng dịch vụ trong giỏ hàng.
+   b. Bước 1: Redis lock slotA -> DB decrement slotA -> Thành công.
+   c. Bước 2: Redis lock slotB -> DB decrement slotB -> THẤT BẠI (Ví dụ: khách sạn hết phòng).
+   d. Kích hoạt Compensating Transactions (Giao dịch bù đắp):
+      - Tự động hoàn lại slot kho (Increment) cho slotA ở Bước 1.
+      - Giải phóng các Redis Lock đã chiếm giữ.
+   e. Trả về lỗi chi tiết cho client: "Đặt combo thất bại do dịch vụ Khách sạn hết chỗ".
+3. Nếu toàn bộ dịch vụ giữ chỗ thành công:
+   a. Tạo các bản ghi Booking tương ứng ở trạng thái HELD (chung một PNR Code / Group ID).
+   b. Lưu thông tin BookingPassenger đi kèm cho từng booking dịch vụ phù hợp.
+   c. Schedule Hangfire AutoCancelJob cho từng booking (15 phút đếm ngược).
+   d. Trả về danh sách Booking DTOs + PNR Code chung.
+4. Đại lý gửi PayCartCommand để thanh toán gộp 1 chạm:
+   a. DB: Khóa dòng số dư ví đại lý (SELECT FOR UPDATE).
+   b. Kiểm tra: Số dư ví >= Tổng tiền của cả giỏ hàng combo.
+   c. Thực hiện trừ tiền ví 1 lần (Single Debit) -> Tạo Ledger entry loại DEBIT cho cả combo.
+   d. Cập nhật trạng thái của TẤT CẢ booking trong combo thành PAID.
+   e. Phát hành E-Voucher QR Code riêng cho dịch vụ nội bộ (Tour, Khách sạn của Supplier trực tiếp trên sàn).
+   f. Đối với nhà xe đối tác bên thứ ba (External Transport - Bus): Nhà xe đối tác đối chiếu thông tin hành khách (BookingPassenger) lúc đón khách để xác nhận lên xe -> đơn chuyển COMPLETED.
+   g. Đối với hãng bay đối tác bên thứ ba (External Flight): Hệ thống tải vé máy bay thật (E-Ticket PDF) và gửi về cho đại lý chuyển khách tự check-in tại sân bay, đơn tự động COMPLETED sau giờ khởi hành.
+```
+
 ---
 
 ## 🧪 4. Chiến Lược Testing MVP
@@ -272,3 +310,5 @@ InventorySlot.DecrementSlot()
 | 7 | Docker | `docker-compose up -d` khởi động toàn bộ: API + Redis + PostgreSQL + Hangfire |
 | 8 | Security | JWT + Refresh Token Rotation + RBAC 4 roles + Idempotent VNPay |
 | 9 | AI Assistant | Tích hợp HttpClient kết nối Gemini API, xử lý Function Calling lấy giá kèm markup |
+| 10 | Shopping Cart | Triển khai giỏ hàng combo và quy trình Saga (Unified Hold + Atomic Debit) |
+| 11 | Mobile App | Thiết kế REST API và WebSocket kết nối ổn định cho React Native |

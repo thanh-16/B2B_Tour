@@ -220,13 +220,14 @@ graph LR
 | 3 | Xem đơn chờ duyệt | Supplier | Danh sách booking On-Request đang chờ xác nhận |
 | 4 | Duyệt đơn đặt chỗ | Booking | Xác nhận đơn On-Request → chuyển CONFIRMED |
 | 5 | Từ chối đơn đặt chỗ | Booking | Từ chối đơn → hoàn tiền tạm giữ cho đại lý |
-| 6 | Xem dịch vụ | Inventory | Xem danh sách dịch vụ của NCC mình |
-| 7 | Tạo dịch vụ mới | Inventory | Tạo tour, phòng khách sạn, vé mới |
-| 8 | Cập nhật slot | Inventory | Cập nhật số lượng, giá slot theo ngày |
-| 9 | Ngừng bán dịch vụ | Inventory | Dừng bán 1 dịch vụ |
-| 10 | Xem thông báo | Notification | Nhận thông báo đơn mới, yêu cầu duyệt |
-| 11 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Agency về dịch vụ đơn hàng |
-| 12 | Xem đánh giá (Phase 2) | Review | Xem các review rating và ý kiến phản hồi từ đại lý |
+| 6 | Quét QR check-in đón khách | Booking | Đối chiếu CCCD/Hộ chiếu với danh sách khách đăng ký, nhấn nút xác nhận đón khách → đơn chuyển COMPLETED |
+| 7 | Xem dịch vụ | Inventory | Xem danh sách dịch vụ của NCC mình |
+| 8 | Tạo dịch vụ mới | Inventory | Tạo tour, phòng khách sạn, vé mới |
+| 9 | Cập nhật slot | Inventory | Cập nhật số lượng, giá slot theo ngày |
+| 10 | Ngừng bán dịch vụ | Inventory | Dừng bán 1 dịch vụ |
+| 11 | Xem thông báo | Notification | Nhận thông báo đơn mới, yêu cầu duyệt |
+| 12 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Agency về dịch vụ đơn hàng |
+| 13 | Xem đánh giá (Phase 2) | Review | Xem các review rating và ý kiến phản hồi từ đại lý |
 
 ```mermaid
 graph LR
@@ -347,6 +348,7 @@ graph LR
 sequenceDiagram
     autonumber
     actor Staff as 👤 Agency Staff/Manager
+    actor Guest as 👤 Khách Hàng Cuối
     actor Supplier as 📦 Supplier Admin
     actor Driver as 🚗 Driver
     participant API as 🏗 Backend API
@@ -382,13 +384,27 @@ sequenceDiagram
     API->>DB: Chuyển PENDING_SUPPLIER_APPROVAL → CONFIRMED
     API->>DB: Thực thu tiền ví tạm giữ
 
-    Note over Staff, VNPay: ═══ PHẦN 4: TỰ DI CHUYỂN & CHECK-IN ═══
+    Note over Staff, VNPay: ═══ PHẦN 4: THỰC HIỆN DỊCH VỤ & CHECK-IN ĐÓN KHÁCH ═══
 
-    Staff->>Staff: Đại lý tải E-Voucher/Vé điện tử (PDF/QR)
+    Staff->>Staff: Đại lý tải E-Voucher / Vé điện tử (PDF/QR) từ hệ thống
     Staff->>Staff: Gửi vé cho Khách hàng cuối
-    Note over Staff, VNPay: Khách hàng tự túc di chuyển từ nhà đến bến xe/sân bay
-    Staff->>API: Khách hàng xuất trình vé check-in tại quầy Đối tác (API check-in)
-    API->>DB: Cập nhật trạng thái vé/đơn hàng thành COMPLETED
+
+    alt Trường hợp 1: Dịch vụ nội bộ (Tour, Khách sạn của Supplier trên sàn)
+        Guest->>Driver: Đến điểm hẹn/Khách sạn -> Xuất trình QR Code Voucher
+        Driver->>API: Quét QR check-in bằng thiết bị cá nhân (POST /api/supplier/check-in)
+        API->>DB: Giải mã, so khớp thông tin BookingPassenger -> Đổi trạng thái COMPLETED
+        API-->>Driver: Hiển thị: "Xác nhận thành công" + Danh sách khách đón
+    else Trường hợp 2: Dịch vụ Nhà xe đối tác bên thứ ba (External Transport - Bus)
+        Guest->>Driver: Đến bến xe/điểm đón -> Đọc Tên/SĐT của trưởng đoàn
+        Driver->>API: Nhập thông tin/so khớp list khách hãng xe -> Xác nhận đón
+        API->>DB: Cập nhật đơn hàng thành COMPLETED
+    else Trường hợp 3: Vé máy bay đối tác bên thứ ba (External Flight API)
+        Note over Staff, VNPay: Sau khi thanh toán, hệ thống B2B đã sync API hãng bay và xuất vé máy bay thật
+        Staff->>Staff: Tải vé máy bay thật (E-Ticket PDF) và gửi cho Khách hàng
+        Guest->>Guest: Khách tự ra sân bay, check-in trực tiếp tại quầy/kiosk của hãng bay
+        API->>DB: Tự động chuyển đơn hàng thành COMPLETED sau giờ khởi hành
+    end
+    API-->>Staff: Bắn Push/Webhook cập nhật đơn hàng thành COMPLETED (Đã hoàn tất)
 ```
 
 ### 4.2 Luồng nạp ví qua VNPay
@@ -814,7 +830,7 @@ graph LR
     PA --> UC52
 ```
 
-### 5.13 Module: Giỏ hàng Combo (Shopping Cart - Phase 2)
+### 5.13 Module: Giỏ hàng Combo (Shopping Cart - Phase 1)
 
 ```mermaid
 graph LR
@@ -939,8 +955,8 @@ graph LR
 | KYC (M02) | ✅ Duyệt | 📝 Nộp | — | — | — | ⏰ Nhắc | — | — |
 | Inventory (M03) | ✅ | — | — | ✅ | — | — | — | — |
 | Search & Markup (M04) | — | ✅ R/W | ✅ R | — | — | — | — | 🤖 Hỗ trợ tìm |
-| Shopping Cart (M05 - P2) | — | ✅ | ✅ | — | — | — | — | — |
-| Booking Engine (M06) | 👁 Xem all | ✅ Hold/Pay/Cancel | ✅ Hold/Pay/Cancel | ✅ Approve | — | ⏰ Cancel | — | 🤖 Auto Hold |
+| Shopping Cart (M05 - P1) | — | ✅ | ✅ | — | — | — | — | — |
+| Booking Engine (M06) | 👁 Xem all | ✅ Hold/Pay/Cancel | ✅ Hold/Pay/Cancel | ✅ Approve/Check-in | — | ⏰ Cancel | — | 🤖 Link đặt |
 | Wallet (M07) | ✅ Credit/Debit | 👁 View | 👁 View | — | — | — | — | — |
 | Invoicing & VAT (M08 - P2) | ✅ Generate | 👁 View | — | — | — | ⏰ Auto | — | — |
 | Voucher & QR (M09) | ✅ Issue | 👁 View (Tải) | 👁 View (Tải) | — | 🚌 (Nhận API) | ⏰ Đồng bộ | — | — |

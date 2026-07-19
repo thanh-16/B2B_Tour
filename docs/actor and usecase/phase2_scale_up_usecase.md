@@ -8,10 +8,10 @@
 
 ## 📊 Tổng quan Phase 2
 
-*   **Use Case mới bổ sung:** 20 UC (bao gồm 6 UC mới cho Chat, Review/Rating)
-*   **Module mới:** Invoicing & VAT (M08), Shopping Cart (M05), Real-time Chat, Review & Rating
+*   **Use Case mới bổ sung:** 15 UC (bao gồm 6 UC mới cho Chat, Review/Rating, các UC về Hóa đơn VAT và CTV)
+*   **Module mới:** Invoicing & VAT (M08), Real-time Chat, Review & Rating
 *   **Actor mới:** Sub-Agent / CTV
-*   **Tổng UC sau Phase 2:** 48 (MVP) + 20 (Scale-up) = **68 UC**
+*   **Tổng UC sau Phase 2:** 55 (MVP) + 15 (Scale-up) = **70 UC**
 
 ---
 
@@ -19,7 +19,7 @@
 
 | Tiêu chí | Phase 1 (MVP) | Phase 2 (Scale-Up) |
 |---|---|---|
-| **Đặt chỗ** | Đặt từng dịch vụ riêng lẻ | Giỏ hàng combo đa dịch vụ, thanh toán 1 lần |
+| **Đặt chỗ** | Đặt đơn lẻ + Giỏ hàng combo đa dịch vụ (Saga) | Mở rộng hệ thống xử lý đặt chỗ phân tán chịu tải cao |
 | **Nạp ví** | VNPay (có phí giao dịch) | VietQR biến động (phí 0%) |
 | **Hóa đơn** | Không có | Xuất hóa đơn VAT điện tử |
 | **Cộng tác viên** | Không hỗ trợ | Hệ thống Sub-Agent + chia hoa hồng tự động |
@@ -30,45 +30,6 @@
 ---
 
 ## 📝 Chi Tiết Use Case Phase 2
-
----
-
-### Module mới: Giỏ hàng Combo (Shopping Cart — M05)
-
-> **Lý do chuyển sang Phase 2:** Giỏ hàng combo đòi hỏi cơ chế **Unified Hold** (khóa đồng thời nhiều dịch vụ của nhiều NCC) và **Atomic Payment** (thanh toán nguyên tử cho cả combo). Đây là logic phức tạp cần kiến trúc Saga/2-Phase Commit, chỉ triển khai khi booking đơn lẻ (Phase 1) đã ổn định.
-
-```mermaid
-graph LR
-    subgraph Cart["🛒 Giỏ hàng Combo"]
-        UC60["UC-60: Thêm dịch vụ vào giỏ"]
-        UC61["UC-61: Xóa dịch vụ khỏi giỏ"]
-        UC62["UC-62: Xem giỏ hàng"]
-        UC63["UC-63: Hold toàn bộ combo"]
-        UC64["UC-64: Thanh toán combo 1 chạm"]
-    end
-
-    AS["👤 Agency Staff"] --> UC60
-    AS --> UC61
-    AS --> UC62
-    AS --> UC63
-    AS --> UC64
-    AM["🏢 Agency Manager"] --> UC60
-    AM --> UC61
-    AM --> UC62
-    AM --> UC63
-    AM --> UC64
-
-    UC63 -.-> |"«include»"| MULTI_LOCK["Redis Multi-Lock (Unified Hold)"]
-    UC64 -.-> |"«include»"| ATOMIC_PAY["Atomic Transaction (Trừ ví 1 lần)"]
-```
-
-| UC | Actor | Mô tả | Quy tắc nghiệp vụ |
-|---|---|---|---|
-| UC-60 | Agency Manager, Staff | Thêm dịch vụ (phòng, vé xe, tour) vào giỏ hàng tạm — hỗ trợ nhiều NCC khác nhau | Giỏ hàng lưu trong Redis với TTL 30 phút |
-| UC-61 | Agency Manager, Staff | Xóa 1 dịch vụ cụ thể khỏi giỏ hàng | — |
-| UC-62 | Agency Manager, Staff | Xem toàn bộ giỏ hàng: danh sách dịch vụ, tổng giá (bao gồm Markup), tổng slot | — |
-| UC-63 | Agency Manager, Staff | Unified Hold: hệ thống khóa Redis Lock cho **toàn bộ** dịch vụ trong giỏ cùng lúc → nếu bất kỳ dịch vụ nào hết slot → rollback tất cả | Tất cả-hoặc-không (All-or-Nothing) |
-| UC-64 | Agency Manager, Staff | Thanh toán combo: 1 lệnh trừ ví cho tổng tiền → tạo nhiều booking riêng → phát hành nhiều voucher | DB Transaction bao bọc toàn bộ → rollback nếu lỗi |
 
 ---
 
@@ -254,7 +215,6 @@ Thực hiện từng bước, mỗi bước là 1 sprint (2 tuần), ưu tiên t
 
 | Module Phase 2 | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | Bank Webhook |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Shopping Cart (Combo) | — | ✅ | ✅ | — | — | — |
 | Invoicing & VAT | ✅ Generate | 👁 View + Download | — | — | ⏰ Auto-generate | — |
 | Sub-Agent / CTV | — | ✅ Quản lý | — | — | — | — |
 | VietQR Auto-Credit | — | ✅ | ✅ | — | — | 📩 Webhook |

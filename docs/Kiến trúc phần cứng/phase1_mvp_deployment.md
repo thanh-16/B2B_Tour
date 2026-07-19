@@ -6,7 +6,7 @@
 
 ## 🎯 Mục Tiêu Giai Đoạn 1
 
-*   Hệ thống chạy được đầy đủ nghiệp vụ cốt lõi: **Đăng ký đại lý → KYC → Tìm kiếm → AI Chat báo giá → Giữ chỗ → Thanh toán ví → Xuất vé & Báo giá**.
+*   Hệ thống chạy được đầy đủ nghiệp vụ cốt lõi: **Đăng ký đại lý → KYC → Tìm kiếm → Giỏ hàng combo → AI Chat báo giá → Giữ chỗ & Thanh toán gộp (Saga) → Xuất vé & Báo giá (Web + Mobile)**.
 *   Chi phí vận hành thấp nhất có thể (dưới 500.000 VNĐ/tháng).
 *   Dễ dàng demo trước hội đồng bảo vệ đồ án bằng 1 lệnh duy nhất.
 *   Đảm bảo an toàn dữ liệu tài chính (không mất tiền ví, không đặt trùng chỗ).
@@ -23,8 +23,8 @@ graph TD
     %% TẦNG CLIENT
     %% ────────────────────────────────────────
     subgraph Clients["📱 Client Layer"]
-        App["📱 React Native App"]
-        Web["🖥️ Web Admin Portal"]
+        App["📱 Mobile App (React Native - Agency & Supplier)"]
+        Web["🖥️ Web Portal (React/Next.js - Agency, Supplier & Admin)"]
     end
 
     %% ────────────────────────────────────────

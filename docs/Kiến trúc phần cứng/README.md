@@ -14,15 +14,15 @@ graph TD
     %% TẦNG CLIENT (Người dùng cuối)
     %% ────────────────────────────────────────────────────
     subgraph ClientLayer["📱 Client Layer"]
-        MobileApp["📱 React Native Mobile App"]
-        WebAdmin["🖥️ Web Admin Portal"]
+        MobileApp["📱 Mobile App (React Native - Agency & Supplier)"]
+        WebPortal["🖥️ Web Portal (React/Next.js - Agency, Supplier & Admin)"]
     end
 
     %% ────────────────────────────────────────────────────
     %% TẦNG BẢO VỆ (Security Gateway)
     %% ────────────────────────────────────────────────────
     MobileApp -->|HTTPS & WebSocket| WAF["🛡️ API Gateway / WAF"]
-    WebAdmin -->|HTTPS| WAF
+    WebPortal -->|HTTPS| WAF
     WAF -->|Chặn DDoS - WebSocket Proxy| LB["⚖️ Load Balancer (Nginx)"]
 
     %% ────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ Nếu hệ thống phát triển lên quy mô sản xuất với hàng trăm đ�
 
 | Tầng Hệ Thống | Công Nghệ Sử Dụng | Mục Đích |
 | :--- | :--- | :--- |
-| **Client (Frontend)** | React Native (Mobile App), React/Next.js (Web Admin) | Giao diện đặt chỗ (App) và quản trị sàn (Web), tích hợp WebSocket SignalR Chat. |
+| **Client (Frontend)** | React Native (Mobile App), React/Next.js (Web Portal) | Giao diện cho đại lý, nhà cung cấp và quản trị sàn (Web + Mobile App). |
 | **Security Gateway** | Cloudflare WAF + SSL/TLS 1.3 | Chặn DDoS, SQL Injection, cấu hình WebSocket SSL Proxy. |
 | **Load Balancer** | Nginx (Reverse Proxy) | Phân phối tải, cấu hình Upgrade/Connection headers để proxy WebSocket. |
 | **Application** | ASP.NET Core 8 (Stateless, Docker Container) | Xử lý logic nghiệp vụ: Booking, Wallet, KYC, Claims. Font MS hỗ trợ PDF. |

@@ -23,8 +23,8 @@ graph TD
     %% TẦNG CLIENT
     %% ────────────────────────────────────────
     subgraph Clients["📱 Client Layer"]
-        App["📱 React Native App"]
-        Web["🖥️ Web Admin Portal"]
+        App["📱 Mobile App (React Native - Agency & Supplier)"]
+        Web["🖥️ Web Portal (React/Next.js - Agency, Supplier & Admin)"]
     end
 
     %% ────────────────────────────────────────

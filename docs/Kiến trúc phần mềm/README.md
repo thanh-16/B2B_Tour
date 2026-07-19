@@ -138,6 +138,7 @@ B2BTravelPlatform/
 │   ├── B2BTravelPlatform.Domain/              # 🧬 Domain Layer
 │   │   ├── Entities/
 │   │   │   ├── Booking.cs                     # Entity đặt chỗ + domain methods
+│   │   │   ├── BookingPassenger.cs            # Entity thông tin hành khách đi tour/vé
 │   │   │   ├── Wallet.cs                      # Entity ví + Credit/Debit logic
 │   │   │   ├── WalletLedger.cs                # Sổ cái giao dịch ví
 │   │   │   ├── Agency.cs                      # Entity đại lý
@@ -439,6 +440,7 @@ erDiagram
     User ||--o{ Booking : "creates"
     Agency ||--o{ Booking : "owns"
     Booking ||--o{ BookingDetail : "contains"
+    Booking ||--o{ BookingPassenger : "contains passengers"
     BookingDetail }o--|| InventorySlot : "reserves"
 
     Supplier ||--o{ Inventory : "provides"
@@ -492,6 +494,17 @@ erDiagram
         enum status
         decimal total_amount
         datetime hold_expires_at
+    }
+
+    BookingPassenger {
+        uuid id PK
+        uuid booking_id FK
+        string full_name
+        string identity_number
+        string phone_number
+        datetime date_of_birth
+        enum passenger_type
+        string gender
     }
 
     Inventory {

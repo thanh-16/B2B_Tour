@@ -8,11 +8,10 @@
 
 ## 🎯 Mục Tiêu Phase 2
 
-*   Triển khai 2 module còn lại: **Shopping Cart Combo** và **Invoicing & VAT**.
-*   Nâng cấp kiến trúc hỗ trợ **đa dịch vụ đồng thời** — Saga Pattern.
-*   Tối ưu hiệu năng đọc bằng **Read/Write Split** PostgreSQL Master-Replica.
+*   Triển khai module còn lại: **Invoicing & VAT**.
+*   Tối ưu hóa Read/Write bằng **Read/Write Split** PostgreSQL Master-Replica.
 *   Bổ sung **hệ thống CTV** và **VietQR Auto-Credit**.
-*   Event-Driven Architecture cho side effects phức tạp.
+*   Event-Driven Architecture (Outbox Pattern) cho side effects phức tạp quy mô lớn.
 
 ---
 
@@ -20,8 +19,8 @@
 
 | Thành phần | Phase 1 - MVP | Phase 2 - Scale-Up |
 | :--- | :--- | :--- |
-| **Booking** | Đặt từng dịch vụ đơn lẻ | Giỏ hàng Combo - đặt nhiều dịch vụ 1 lần |
-| **Transaction** | UnitOfWork đơn giản | **Saga Pattern** cho Combo multi-supplier |
+| **Booking** | Đặt đơn lẻ + Giỏ hàng combo (Saga) | Tối ưu hóa hiệu năng giữ chỗ đồng thời số lượng lớn |
+| **Transaction** | UnitOfWork + Saga in-process | **Outbox Pattern** đảm bảo tính toàn vẹn của Saga |
 | **DB Read/Write** | 1 instance chung | **Read/Write Split** - Master ghi, Replica đọc |
 | **Nạp ví** | VNPay duy nhất | VNPay + **VietQR biến động** phí 0% |
 | **Hóa đơn** | Không có | **Hóa đơn VAT điện tử** auto-generate |
@@ -33,61 +32,7 @@
 
 ## 🏗️ 2. Module Mới Phase 2
 
-### 2.1 Shopping Cart Combo - Saga Pattern
-
-Đặt combo nhiều dịch vụ của nhiều NCC cùng lúc đòi hỏi **Orchestrator Saga** — mỗi bước có compensating action để rollback nếu thất bại:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Staff as 📱 Agency Staff
-    participant API as WebAPI
-    participant Saga as Saga Orchestrator
-    participant Slot1 as Slot Service A
-    participant Slot2 as Slot Service B
-    participant Wallet as Wallet Service
-    participant Ledger as Ledger Service
-
-    Staff->>API: POST /cart/checkout
-    API->>Saga: Start ComboCheckoutSaga
-
-    Saga->>Slot1: Step 1 - Hold Slot A
-    Slot1-->>Saga: Slot A Held OK
-
-    Saga->>Slot2: Step 2 - Hold Slot B
-    Slot2-->>Saga: Slot B Held OK
-
-    Saga->>Wallet: Step 3 - Debit total amount
-    Wallet-->>Saga: Debit OK
-
-    Saga->>Ledger: Step 4 - Create Ledger entries
-    Ledger-->>Saga: Ledger OK
-
-    Saga-->>API: All steps completed
-    API-->>Staff: 201 - Combo Booking Created
-
-    Note over Saga,Slot1: Nếu Step 3 Debit FAIL
-    Saga->>Slot2: Compensate - Restore Slot B
-    Saga->>Slot1: Compensate - Restore Slot A
-    Saga-->>API: 409 - Insufficient Balance
-```
-
-**Cấu trúc code mới:**
-
-```text
-Features/
-├── Cart/
-│   ├── Commands/
-│   │   ├── AddToCartCommand.cs            # Thêm dịch vụ vào giỏ (Redis)
-│   │   ├── RemoveFromCartCommand.cs        # Xóa dịch vụ
-│   │   └── CheckoutComboCommand.cs         # Kích hoạt Saga Orchestrator
-│   ├── Queries/
-│   │   └── GetCartQuery.cs                 # Xem giỏ hàng hiện tại
-│   └── Sagas/
-│       └── ComboCheckoutSaga.cs            # Orchestrator Saga
-```
-
-### 2.2 Invoicing & VAT - Auto-Generate
+### 2.1 Invoicing & VAT - Auto-Generate
 
 ```mermaid
 graph LR
@@ -121,7 +66,7 @@ Features/
 │       └── EInvoiceApiClient.cs            # Client gọi API hóa đơn điện tử
 ```
 
-### 2.3 Sub-Agent / CTV System
+### 2.2 Sub-Agent / CTV System
 
 ```text
 Features/
@@ -140,7 +85,7 @@ Features/
 2. `BookingPaidEvent` → Handler tính: `commission = totalAmount * commissionRate`.
 3. Cộng dồn vào `SubAgentCommissionLedger` → Agency Manager đối soát cuối tháng.
 
-### 2.4 VietQR Auto-Credit
+### 2.3 VietQR Auto-Credit
 
 ```text
 Features/
@@ -152,7 +97,7 @@ Features/
 │       └── BankWebhookVerifier.cs          # Xác thực HMAC webhook ngân hàng
 ```
 
-### 2.5 Real-time Chat (SignalR & Redis Backplane)
+### 2.4 Real-time Chat (SignalR & Redis Backplane)
 
 ```mermaid
 graph TD
@@ -178,7 +123,7 @@ graph TD
     │       └── GetChatHistoryQuery.cs      # Lấy lịch sử chat theo BookingId
     ```
 
-### 2.6 Review & Rating (Anti-Spam & Auto-Calculate)
+### 2.5 Review & Rating (Anti-Spam & Auto-Calculate)
 
 *   **Anti-Spam Validation:** Trước khi ghi nhận review vào DB, FluentValidation kiểm tra:
     1. Đơn hàng phải tồn tại và thuộc về Agency thực hiện đánh giá.
