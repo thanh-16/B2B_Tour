@@ -6,6 +6,8 @@
 
 ## 🗺️ 1. Mô Hình Kiến Trúc Tổng Quan
 
+![Sơ đồ kiến trúc phần mềm Clean Architecture](file:///C:/Users/nqtha/.gemini/antigravity-ide/brain/2ddcb31d-a7ef-4c7c-8c7a-0d6a7a1f224d/software_architecture_diagram_1784448509443.png)
+
 Hệ thống được xây dựng theo mô hình **Clean Architecture** kết hợp **Domain-Driven Design - DDD** và **CQRS** để đảm bảo: tách biệt nghiệp vụ khỏi công nghệ, dễ viết test, dễ thay thế database/cache mà không ảnh hưởng logic.
 
 ```mermaid
