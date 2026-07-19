@@ -70,7 +70,7 @@ graph TB
 
 ### 3.1 🔑 Platform Admin
 
-**Vai trò:** Quản trị viên toàn hệ thống. Phê duyệt đại lý, quản lý tài chính, cấu hình hệ thống, giải quyết khiếu nại.
+**Vai trò:** Quản trị viên toàn hệ thống. Phê duyệt đại lý, quản lý tài chính, cấu hình hệ thống, giải quyết khiếu nại, phát hành hóa đơn.
 
 **Chức năng:**
 
@@ -88,6 +88,8 @@ graph TB
 | 10 | Xem dashboard & báo cáo | Report | Dashboard tổng quan, báo cáo doanh thu, giao dịch ví |
 | 11 | Xuất báo cáo | Report | Xuất dữ liệu giao dịch dạng Excel |
 | 12 | Cấu hình hệ thống | Config | Thiết lập tham số (phí dịch vụ, thời gian hold, API đối tác) |
+| 13 | Đổi mật khẩu | Auth | Cập nhật mật khẩu cá nhân bảo mật tài khoản |
+| 14 | Quản lý hóa đơn VAT (Phase 2) | Invoice | Xem danh sách và phát hành hóa đơn VAT điện tử |
 
 ```mermaid
 graph LR
@@ -103,116 +105,134 @@ graph LR
     PA --> UC_CLAIM["Duyệt khiếu nại"]
     PA --> UC_REPORT["Dashboard & Báo cáo"]
     PA --> UC_CONFIG["Cấu hình hệ thống"]
+    PA --> UC_PW["Đổi mật khẩu"]
+    PA --> UC_INV_VAT["Quản lý hóa đơn VAT"]
 ```
 
 ---
 
 ### 3.2 🏢 Agency Manager
 
-**Vai trò:** Chủ hoặc quản lý đại lý du lịch. Đăng ký đại lý, quản lý nhân viên, cấu hình markup, thực hiện giao dịch.
+**Vai trò:** Chủ hoặc quản lý đại lý du lịch. Quản lý nhân viên, cấu hình markup, giữ chỗ, thanh toán, quản lý cộng tác viên, giao tiếp với nhà cung cấp.
 
 **Chức năng:**
 
 | # | Chức năng | Module | Mô tả |
 |---|-----------|--------|-------|
 | 1 | Đăng ký đại lý mới | Onboard | Đăng ký đại lý vào hệ thống, nộp hồ sơ KYC |
-| 2 | Tìm kiếm dịch vụ | Search | Tìm kiếm khách sạn, tour, vé (giá đã cộng markup) |
-| 3 | Cấu hình markup | Search | Cập nhật tỷ lệ markup (phí dịch vụ) cho đại lý |
-| 4 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
-| 5 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
-| 6 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
-| 7 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
-| 8 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
-| 9 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
+| 2 | Đổi mật khẩu & Hồ sơ | Auth | Đổi mật khẩu, cập nhật thông tin cá nhân (Tên, SĐT, Email) |
+| 3 | Quản lý nhân viên | Staff | Thêm mới tài khoản Staff, Khóa/Mở khóa tài khoản nhân viên |
+| 4 | Tìm kiếm dịch vụ | Search | Tìm kiếm dịch vụ sỉ (giá đã cộng markup) |
+| 5 | Cấu hình markup | Search | Cập nhật tỷ lệ markup (phí dịch vụ) cho đại lý |
+| 6 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
+| 7 | Hủy đơn chủ động | Booking | Hủy đơn đang HELD chủ động trước khi hết 15 phút để hoàn slot kho |
+| 8 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
+| 9 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
+| 10 | Xem lịch sử ví | Wallet | Xem lịch sử các giao dịch nạp/trừ ví chi tiết (Ledger) |
+| 11 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
+| 12 | Tải E-Voucher | Voucher | Tải E-Voucher / Vé điện tử (PDF) về máy |
+| 13 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
+| 14 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
+| 15 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và đặt giữ chỗ tự động |
+| 16 | Giỏ hàng Combo (Phase 2) | Cart | Thêm/Xóa/Xem giỏ hàng, Hold và thanh toán combo 1 chạm (Atomic) |
+| 17 | Xem/Tải hóa đơn VAT (Phase 2) | Invoice | Xem danh sách và tải file PDF hóa đơn VAT điện tử |
+| 18 | Quản lý CTV / Sub-Agent (Phase 2) | Sub-Agent | Tạo tài khoản CTV, cấu hình % hoa hồng, xem báo cáo hoa hồng |
+| 19 | Nạp ví VietQR (Phase 2) | Payment | Tạo VietQR biến động nạp ví tự động qua Bank Webhook (Phí 0%) |
+| 20 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Supplier về dịch vụ đơn hàng |
+| 21 | Gửi đánh giá (Phase 2) | Review | Gửi review rating từ 1-5 sao sau khi đơn hàng COMPLETED |
 
 ```mermaid
 graph LR
     AM["🏢 Agency Manager"]
 
-    AM --> UC_REG["Đăng ký đại lý mới"]
-    AM --> UC_SEARCH["Tìm kiếm dịch vụ"]
-    AM --> UC_MARKUP["Cấu hình markup"]
-    AM --> UC_HOLD["Giữ chỗ (Hold)"]
-    AM --> UC_PAY["Thanh toán (Pay)"]
-    AM --> UC_BAL["Xem số dư ví"]
-    AM --> UC_VNPAY["Nạp ví qua VNPay"]
-    AM --> UC_CLAIM["Tạo khiếu nại"]
-    AM --> UC_NOTI["Xem thông báo"]
+    AM --> UC_REG["Đăng ký & KYC"]
+    AM --> UC_PROFILE["Profile & Staff"]
+    AM --> UC_SEARCH["Tìm kiếm & AI Assistant"]
+    AM --> UC_HOLD["Giữ chỗ & Hủy đơn"]
+    AM --> UC_PAY["Thanh toán & Hóa đơn VAT"]
+    AM --> UC_WAL["Ví & Lịch sử & VietQR"]
+    AM --> UC_CTV["Cộng tác viên & Hoa hồng"]
+    AM --> UC_CHAT["Chat & Review & Khiếu nại"]
 ```
-
-**Phân biệt với Agency Staff:** Agency Manager có thêm quyền đăng ký đại lý và cập nhật cấu hình markup.
 
 ---
 
 ### 3.3 👤 Agency Staff
 
-**Vai trò:** Nhân viên bán hàng tại đại lý. Thực hiện nghiệp vụ hàng ngày: tìm kiếm, đặt chỗ, thanh toán.
+**Vai trò:** Nhân viên bán hàng tại đại lý. Thực hiện nghiệp vụ hàng ngày: tìm kiếm, đặt chỗ, thanh toán, giao tiếp với nhà cung cấp.
 
 **Chức năng:**
 
 | # | Chức năng | Module | Mô tả |
 |---|-----------|--------|-------|
-| 1 | Tìm kiếm dịch vụ | Search | Tìm kiếm dịch vụ du lịch (giá đã cộng markup) |
-| 2 | Xem cấu hình markup | Search | Xem (chỉ đọc) tỷ lệ markup hiện tại |
-| 3 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm, lock slot kho, đếm ngược 15 phút |
-| 4 | Thanh toán (Pay) | Booking | Trừ ví đại lý để thanh toán đơn hàng |
-| 5 | Xem số dư ví | Wallet | Xem số dư khả dụng (chỉ đọc) |
-| 6 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay nạp ví |
-| 7 | Tạo khiếu nại | Claim | Gửi yêu cầu khiếu nại dịch vụ |
-| 8 | Xem thông báo | Notification | Nhận thông báo hệ thống |
+| 1 | Đổi mật khẩu & Hồ sơ | Auth | Đổi mật khẩu, cập nhật thông tin cá nhân |
+| 2 | Tìm kiếm dịch vụ | Search | Tìm kiếm dịch vụ du lịch (giá đã cộng markup) |
+| 3 | Xem cấu hình markup | Search | Xem (chỉ đọc) tỷ lệ markup hiện tại |
+| 4 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm, lock slot kho, đếm ngược 15 phút |
+| 5 | Hủy đơn chủ động | Booking | Hủy đơn đang HELD chủ động trước khi hết hạn |
+| 6 | Thanh toán (Pay) | Booking | Trừ ví đại lý để thanh toán đơn hàng |
+| 7 | Xem số dư ví | Wallet | Xem số dư khả dụng (chỉ đọc) |
+| 8 | Xem lịch sử ví | Wallet | Xem lịch sử các giao dịch nạp/trừ ví của đại lý |
+| 9 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay nạp ví |
+| 10 | Tải E-Voucher | Voucher | Tải E-Voucher / Vé điện tử (PDF) về máy |
+| 11 | Tạo khiếu nại | Claim | Gửi yêu cầu khiếu nại dịch vụ |
+| 12 | Xem thông báo | Notification | Nhận thông báo hệ thống |
+| 13 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và đặt giữ chỗ tự động |
+| 14 | Giỏ hàng Combo (Phase 2) | Cart | Thêm/Xóa/Xem giỏ hàng, Hold và thanh toán combo 1 chạm (Atomic) |
+| 15 | Nạp ví VietQR (Phase 2) | Payment | Tạo VietQR biến động nạp ví tự động qua Bank Webhook (Phí 0%) |
+| 16 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Supplier về dịch vụ đơn hàng |
+| 17 | Gửi đánh giá (Phase 2) | Review | Gửi review rating từ 1-5 sao sau khi đơn hàng COMPLETED |
 
 ```mermaid
 graph LR
     AS["👤 Agency Staff"]
 
-    AS --> UC_SEARCH["Tìm kiếm dịch vụ"]
-    AS --> UC_MARKUP_R["Xem markup (chỉ đọc)"]
-    AS --> UC_HOLD["Giữ chỗ (Hold)"]
-    AS --> UC_PAY["Thanh toán (Pay)"]
-    AS --> UC_BAL["Xem số dư ví"]
-    AS --> UC_VNPAY["Nạp ví qua VNPay"]
-    AS --> UC_CLAIM["Tạo khiếu nại"]
-    AS --> UC_NOTI["Xem thông báo"]
+    AS --> UC_PROFILE["Profile & Đổi mật khẩu"]
+    AS --> UC_SEARCH["Tìm kiếm & AI Assistant"]
+    AS --> UC_HOLD["Giữ chỗ & Hủy đơn"]
+    AS --> UC_PAY["Thanh toán & E-Voucher"]
+    AS --> UC_WAL["Ví & Lịch sử & VietQR"]
+    AS --> UC_CHAT["Chat & Review & Khiếu nại"]
 ```
 
 **Giới hạn so với Agency Manager:**
-- ❌ Không được đăng ký đại lý mới
-- ❌ Không được cập nhật cấu hình markup
-- Chỉ hoạt động trong phạm vi đại lý mà mình thuộc về
+- ❌ Không được đăng ký đại lý mới / quản lý hồ sơ doanh nghiệp.
+- ❌ Không được cập nhật cấu hình markup của đại lý.
+- ❌ Không được tạo và quản lý nhân viên (Staff) hay cộng tác viên (CTV/Sub-Agent).
+- Chỉ hoạt động trong phạm vi đại lý mà mình thuộc về.
 
 ---
 
 ### 3.4 📦 Supplier Admin
 
-**Vai trò:** Quản trị viên nhà cung cấp dịch vụ du lịch. Quản lý kho dịch vụ, duyệt đơn đặt chỗ On-Request từ đại lý.
+**Vai trò:** Quản trị viên nhà cung cấp dịch vụ du lịch. Quản lý kho dịch vụ, duyệt đơn đặt chỗ On-Request, giao tiếp với đại lý.
 
 **Chức năng:**
 
 | # | Chức năng | Module | Mô tả |
 |---|-----------|--------|-------|
-| 1 | Xem dashboard NCC | Supplier | Thống kê đơn hàng, doanh thu của nhà cung cấp |
-| 2 | Xem đơn chờ duyệt | Supplier | Danh sách booking On-Request đang chờ xác nhận |
-| 3 | Duyệt đơn đặt chỗ | Booking | Xác nhận đơn On-Request → chuyển CONFIRMED |
-| 4 | Từ chối đơn đặt chỗ | Booking | Từ chối đơn → hoàn tiền tạm giữ cho đại lý |
-| 5 | Xem dịch vụ | Inventory | Xem danh sách dịch vụ của NCC mình |
-| 6 | Tạo dịch vụ mới | Inventory | Tạo tour, phòng khách sạn, vé mới |
-| 7 | Cập nhật slot | Inventory | Cập nhật số lượng, giá slot theo ngày |
-| 8 | Ngừng bán dịch vụ | Inventory | Dừng bán 1 dịch vụ |
-| 9 | Xem thông báo | Notification | Nhận thông báo đơn mới, yêu cầu duyệt |
+| 1 | Đổi mật khẩu | Auth | Cập nhật mật khẩu cá nhân bảo vệ tài khoản |
+| 2 | Xem dashboard NCC | Supplier | Thống kê đơn hàng, doanh thu của nhà cung cấp |
+| 3 | Xem đơn chờ duyệt | Supplier | Danh sách booking On-Request đang chờ xác nhận |
+| 4 | Duyệt đơn đặt chỗ | Booking | Xác nhận đơn On-Request → chuyển CONFIRMED |
+| 5 | Từ chối đơn đặt chỗ | Booking | Từ chối đơn → hoàn tiền tạm giữ cho đại lý |
+| 6 | Xem dịch vụ | Inventory | Xem danh sách dịch vụ của NCC mình |
+| 7 | Tạo dịch vụ mới | Inventory | Tạo tour, phòng khách sạn, vé mới |
+| 8 | Cập nhật slot | Inventory | Cập nhật số lượng, giá slot theo ngày |
+| 9 | Ngừng bán dịch vụ | Inventory | Dừng bán 1 dịch vụ |
+| 10 | Xem thông báo | Notification | Nhận thông báo đơn mới, yêu cầu duyệt |
+| 11 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Agency về dịch vụ đơn hàng |
+| 12 | Xem đánh giá (Phase 2) | Review | Xem các review rating và ý kiến phản hồi từ đại lý |
 
 ```mermaid
 graph LR
     SA["📦 Supplier Admin"]
 
     SA --> UC_DASH["Dashboard NCC"]
-    SA --> UC_PENDING["Xem đơn chờ duyệt"]
-    SA --> UC_APPROVE["Duyệt đơn đặt chỗ"]
-    SA --> UC_REJECT["Từ chối đơn đặt chỗ"]
-    SA --> UC_LIST_SVC["Xem dịch vụ"]
-    SA --> UC_CREATE_SVC["Tạo dịch vụ mới"]
-    SA --> UC_SLOT["Cập nhật slot"]
-    SA --> UC_STOP["Ngừng bán dịch vụ"]
-    SA --> UC_NOTI["Xem thông báo"]
+    SA --> UC_PENDING["Xem & Duyệt/Từ chối đơn"]
+    SA --> UC_SVC["Quản lý dịch vụ & Slot"]
+    SA --> UC_CHAT["Chat & Xem Review"]
+    SA --> UC_PW["Đổi mật khẩu & Thông báo"]
 ```
 
 **Quy tắc nghiệp vụ quan trọng:**
