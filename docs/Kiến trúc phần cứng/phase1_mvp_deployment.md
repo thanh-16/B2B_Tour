@@ -61,13 +61,15 @@ graph TD
     subgraph FreeSaaS["🔌 Dịch vụ SaaS"]
         CF["🛡️ Cloudflare Free"]
         FCM["🔔 Firebase FCM"]
-        S3["📁 Cloudinary Free"]
+        S3["📁 Cloudinary / S3 Free"]
         VNPAY["💳 VNPay Sandbox"]
+        GEMINI["🤖 Google Gemini API (LLM SaaS)"]
     end
     CF -->|Proxy DNS| NGINX
     API -->|Push| FCM
-    API -->|Upload| S3
+    API -->|Upload KYC, Voucher, Quotation| S3
     API <-->|IPN Callback| VNPAY
+    API -->|Function Calling & NLP| GEMINI
 ```
 
 ---
@@ -79,7 +81,8 @@ graph TD
 | 1 | **VPS Cloud** (DigitalOcean / Vultr / Contabo) | 4 vCPU, 8 GB RAM, SSD 80 GB | ~300.000 - 500.000 VNĐ | Chạy toàn bộ Docker Compose trên 1 máy. |
 | 2 | **Cloudflare Free** | SaaS miễn phí | 0 VNĐ | DNS, SSL/TLS, WAF cơ bản, DDoS protection. |
 | 3 | **Firebase FCM** | SaaS miễn phí | 0 VNĐ | Push Notification không giới hạn. |
-| 4 | **Cloudinary Free** | 25 GB Storage, 25 GB Bandwidth | 0 VNĐ | Lưu ảnh KYC (CCCD, Giấy phép lữ hành). |
+| 4 | **Cloudinary / S3 Free** | 25 GB Storage, 25 GB Bandwidth | 0 VNĐ | Lưu ảnh KYC, PDF Voucher, PDF báo giá. |
+| 5 | **Google Gemini API** | Gói Free / Pay-as-you-go | Tùy token sử dụng (~0 VNĐ sandbox) | LLM xử lý chat NLP và gợi ý combo du lịch. |
 | | **Tổng chi phí** | | **~300.000 - 500.000 VNĐ** | |
 
 ---
@@ -106,6 +109,14 @@ graph TD
 ### 3.5 Cloudflare Free (DNS + SSL + WAF)
 *   **Vai trò:** Trỏ domain về VPS, cấp chứng chỉ SSL/TLS miễn phí, chặn DDoS cơ bản và brute-force.
 *   **Tại sao chọn:** Hoàn toàn miễn phí, cấu hình đơn giản (chỉ cần thay đổi DNS), hiệu quả bảo vệ cao.
+
+### 3.6 Google Gemini API (SaaS LLM Integration)
+*   **Vai trò:** Xử lý ngôn ngữ tự nhiên từ tin nhắn chat của người dùng, gọi function search inventory nội bộ và chuyển hóa JSON thô thành combo gợi ý tự nhiên.
+*   **Tại sao tích hợp dạng SaaS ở MVP:** Để tránh việc VPS MVP quá tải hoặc phải đầu tư hạ tầng GPU đắt đỏ để tự host mô hình AI nội bộ. Việc gọi API của Google giúp hệ thống luôn nhẹ nhàng, tiết kiệm chi phí RAM/CPU, và đảm bảo chất lượng phản hồi ngôn ngữ tự nhiên chuẩn xác nhất.
+
+### 3.7 Render & Xuất Báo Giá PDF/Excel
+*   **Vai trò:** Xuất file báo giá du lịch (Quotation) và Voucher điện tử.
+*   **Tại sao đáp ứng tốt:** Sử dụng thư viện C# gọn nhẹ (như QuestPDF) để biên dịch file trực tiếp bằng mã nguồn. Để hiển thị chính xác tiếng Việt, container chứa Web API chỉ cần cài đặt thêm gói phông chữ Microsoft (`msttcorefonts`), giúp việc xuất file nhanh chóng mà không gây hao tốn RAM giống như sử dụng headless browser.
 
 ---
 

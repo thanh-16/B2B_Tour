@@ -21,9 +21,9 @@ graph TD
     %% ────────────────────────────────────────────────────
     %% TẦNG BẢO VỆ (Security Gateway)
     %% ────────────────────────────────────────────────────
-    MobileApp -->|HTTPS| WAF["🛡️ API Gateway / WAF"]
+    MobileApp -->|HTTPS & WebSocket| WAF["🛡️ API Gateway / WAF"]
     WebAdmin -->|HTTPS| WAF
-    WAF -->|Chặn DDoS - SQL Injection| LB["⚖️ Load Balancer"]
+    WAF -->|Chặn DDoS - WebSocket Proxy| LB["⚖️ Load Balancer (Nginx)"]
 
     %% ────────────────────────────────────────────────────
     %% TẦNG ỨNG DỤNG (Application Layer)
@@ -32,19 +32,19 @@ graph TD
         API1["Web API Server 1 - ASP.NET Core"]
         API2["Web API Server 2 - ASP.NET Core"]
     end
-    LB -->|Round Robin| API1
-    LB -->|Round Robin| API2
+    LB -->|HTTPS & WS Round Robin| API1
+    LB -->|HTTPS & WS Round Robin| API2
 
     %% ────────────────────────────────────────────────────
     %% TẦNG DỊCH VỤ BỔ TRỢ (Cache, Queue, Notification)
     %% ────────────────────────────────────────────────────
     subgraph SupportServices["⚡ Support Services Layer"]
-        REDIS["⚡ Redis - Cache & Lock"]
+        REDIS["⚡ Redis - Cache, Lock & SignalR Backplane"]
         HANGFIRE["⏰ Hangfire - Background Jobs"]
         FCM["🔔 Firebase Cloud Messaging"]
     end
-    API1 <-->|Session & Lock| REDIS
-    API2 <-->|Session & Lock| REDIS
+    API1 <-->|Session, Lock & WS Pub/Sub| REDIS
+    API2 <-->|Session, Lock & WS Pub/Sub| REDIS
     API1 -->|Enqueue Jobs| HANGFIRE
     API2 -->|Enqueue Jobs| HANGFIRE
     API1 -->|Push Notification| FCM
@@ -69,18 +69,23 @@ graph TD
     %% TẦNG LƯU TRỮ FILE (Object Storage)
     %% ────────────────────────────────────────────────────
     STORAGE["📁 Object Storage - S3 / GCS"]
-    API1 -->|Upload File| STORAGE
-    API2 -->|Upload File| STORAGE
+    API1 -->|Upload File - KYC, Voucher, Quotation| STORAGE
+    API2 -->|Upload File - KYC, Voucher, Quotation| STORAGE
 
     %% ────────────────────────────────────────────────────
-    %% HỆ THỐNG BÊN NGOÀI (External Partners)
+    %% HỆ THỐNG BÊN NGOÀI (External Partners & SaaS)
     %% ────────────────────────────────────────────────────
     subgraph ExternalServices["🔌 External Services"]
         VNPAY["💳 VNPay Gateway"]
+        CASSO["🏦 Casso / PayOS VietQR Webhook"]
         PARTNER["🚌 Partner APIs"]
+        GEMINI["🤖 Google Gemini API (LLM SaaS)"]
     end
     API1 <-->|IPN Callback| VNPAY
     API2 <-->|IPN Callback| VNPAY
+    API1 <-->|Bank Webhook| CASSO
+    API2 <-->|Bank Webhook| CASSO
+    API1 & API2 -->|Function Calling & NLP| GEMINI
     HANGFIRE -->|Auto Sync| PARTNER
 ```
 
@@ -92,16 +97,17 @@ Bảng dưới đây liệt kê đầy đủ các thành phần hạ tầng cầ
 
 | # | Thành Phần Hạ Tầng | Số Lượng | Thông Số Kỹ Thuật | Vai Trò Trong Hệ Thống |
 | :---: | :--- | :---: | :--- | :--- |
-| 1 | **API Gateway / WAF (Cloudflare)** | 01 | Dịch vụ SaaS (Gói Free/Pro) | Chặn DDoS, brute-force, SQL Injection. Cấp chứng chỉ SSL/TLS miễn phí. |
-| 2 | **Load Balancer (Nginx)** | 01 | 2 vCPU, 1 GB RAM | Phân phối tải đều giữa các Web API Server bằng thuật toán Round Robin. |
-| 3 | **Web API Server** | 02 | 2 vCPU, 8 GB RAM mỗi server | Chạy ứng dụng ASP.NET Core (Stateless). Xử lý toàn bộ logic nghiệp vụ. |
-| 4 | **Redis Server** | 01 | 1 GB RAM (In-memory) | Cache dữ liệu tần suất cao, quản lý Distributed Lock chống Race Condition, lưu Idempotent Key chống trùng Webhook. |
-| 5 | **Hangfire Worker** | 01 | 2 vCPU, 4 GB RAM | Xử lý tác vụ nền: tự động hủy đơn quá hạn, gọi API đối tác, gửi Push Notification. |
-| 6 | **PostgreSQL Master** | 01 | 2 vCPU, 8 GB RAM, SSD 50 GB | CSDL chính xử lý ghi (INSERT/UPDATE/DELETE) cho dữ liệu tài chính, ví, đơn hàng. |
-| 7 | **PostgreSQL Replica** | 01 | 2 vCPU, 8 GB RAM, SSD 50 GB | Bản sao đồng bộ liên tục từ Master phục vụ đọc (SELECT) cho tìm kiếm, báo cáo. |
-| 8 | **Object Storage (S3 / GCS)** | 01 | 10 GB khởi điểm, tự mở rộng | Lưu trữ file nhị phân: ảnh CCCD/Giấy phép KYC, file PDF Voucher/Vé điện tử. |
-| 9 | **Firebase Cloud Messaging** | 01 | Dịch vụ SaaS (Miễn phí) | Gửi Push Notification tức thì đến điện thoại đại lý (đơn sắp hết hạn, nạp tiền thành công). |
-| 10 | **Monitoring (Cloud Monitoring)** | 01 | Dịch vụ SaaS | Giám sát CPU/RAM/Disk/Network 24/7. Gửi cảnh báo qua Email/Telegram khi server quá tải hoặc sập. |
+| 1 | **API Gateway / WAF (Cloudflare)** | 01 | Dịch vụ SaaS (Gói Free/Pro) | Chặn DDoS, SQL Injection, Hỗ trợ WebSocket SSL Proxy cho SignalR Chat. |
+| 2 | **Load Balancer (Nginx)** | 01 | 2 vCPU, 1 GB RAM | Reverse Proxy phân phối tải đều API & hỗ trợ WebSocket Connection keep-alive. |
+| 3 | **Web API Server** | 02 | 2 vCPU, 8 GB RAM mỗi server | Chạy ứng dụng ASP.NET Core (Stateless). Cài đặt font Microsoft để xuất báo giá PDF. |
+| 4 | **Redis Server** | 01 | 2 GB RAM (In-memory) | Cache, Distributed Lock, Idempotent Key và **Redis Backplane** đồng bộ tin nhắn WebSocket Chat. |
+| 5 | **Hangfire Worker** | 01 | 2 vCPU, 4 GB RAM | Xử lý tác vụ nền: tự động hủy đơn, xuất hóa đơn VAT, đồng bộ đối tác. |
+| 6 | **PostgreSQL Master** | 01 | 2 vCPU, 8 GB RAM, SSD 50 GB | CSDL chính xử lý ghi (đơn hàng, ví, chat message, review). |
+| 7 | **PostgreSQL Replica** | 01 | 2 vCPU, 8 GB RAM, SSD 50 GB | Bản sao đồng bộ liên tục phục vụ đọc (Tìm kiếm, hiển thị Review/Rating). |
+| 8 | **Object Storage (S3 / GCS)** | 01 | 10 GB khởi điểm, tự mở rộng | Lưu trữ file ảnh KYC, PDF Voucher và file PDF báo giá Quotation. |
+| 9 | **Firebase Cloud Messaging** | 01 | Dịch vụ SaaS (Miễn phí) | Gửi Push Notification tức thì đến điện thoại đại lý. |
+| 10 | **Google Gemini API** | SaaS | Dịch vụ theo lượng token sử dụng | Cung cấp dịch vụ LLM để trợ lý AI phân tích ngôn ngữ tự nhiên và báo giá combo. |
+| 11 | **Monitoring (Grafana + Prometheus)**| 01 | Dịch vụ SaaS | Giám sát tài nguyên phần cứng, cảnh báo Telegram. |
 
 ---
 
@@ -137,6 +143,20 @@ Hệ thống phần cứng được thiết kế để giải quyết triệt đ
         *   **SQL Injection & XSS**: Phân tích pattern request và chặn các payload độc hại trước khi chúng chạm đến Web API Server.
         *   **Brute-force login**: Hiển thị CAPTCHA sau 5 lần đăng nhập sai liên tiếp.
     *   Toàn bộ traffic từ Client đến Load Balancer được mã hóa **TLS 1.3** (HTTPS) do Cloudflare cấp chứng chỉ SSL miễn phí.
+
+### Lỗi 5: Spam khóa kho ảo qua Trợ lý AI (Hold Booking DOS Attack)
+*   **Kịch bản lỗi:** Kẻ xấu lạm dụng chatbot AI liên tục yêu cầu báo giá combo, nếu AI tự động giữ chỗ (Hold Booking) thì hàng loạt phòng và vé sỉ bị lock ảo trong 15 phút, gây cạn kiệt kho hàng thực tế của Supplier.
+*   **Giải pháp bằng hạ tầng & thiết kế:**
+    *   **UI Verification (Xác nhận thủ công):** Chatbot AI (Gemini API) chỉ phân tích NLP và trả về cấu trúc dữ liệu đề xuất combo trên giao diện Chat. Hệ thống **tuyệt đối không cho phép AI tự động gọi API Hold**.
+    *   Nút bấm đặt chỗ chỉ mang giá trị chuyển hướng (Redirect Link) về màn hình tạo Booking, buộc nhân viên đại lý (Manager/Staff) phải tự tay click xác nhận.
+    *   Kết hợp **Rate Limiting** trên API Chat AI tối đa 10 request/phút/user bằng Redis để chặn script gọi spam.
+
+### Lỗi 6: Mất kết nối WebSocket/Chat trên môi trường Multi-Server (SignalR Connection Loss)
+*   **Kịch bản lỗi:** Hệ thống có 2 server API. Đại lý kết nối vào Server 1 qua WebSocket, Supplier kết nối vào Server 2. Khi đại lý gửi tin nhắn chat, Server 1 không thể gửi trực tiếp cho Supplier do kết nối WebSocket của Supplier đang nằm ở tiến trình của Server 2.
+*   **Giải pháp bằng hạ tầng:**
+    *   Cấu hình **Redis Server làm Backplane (Message Broker)** cho SignalR.
+    *   Khi Server 1 nhận tin nhắn từ đại lý, nó gửi tin nhắn lên kênh Pub/Sub của Redis. Server 2 subcribe kênh này sẽ nhận được và chuyển tiếp tin nhắn xuống WebSocket của Supplier tương ứng. Đảm bảo chat hoạt động thông suốt không phụ thuộc client kết nối vào server nào.
+    *   Cấu hình Nginx Load Balancer hỗ trợ **Sticky Sessions (hoặc ip_hash)** và các chỉ thị WebSocket (Upgrade, Connection) để duy trì kết nối Socket ổn định.
 
 ---
 
@@ -183,14 +203,15 @@ Nếu hệ thống phát triển lên quy mô sản xuất với hàng trăm đ�
 
 | Tầng Hệ Thống | Công Nghệ Sử Dụng | Mục Đích |
 | :--- | :--- | :--- |
-| **Client (Frontend)** | React Native (Mobile App), React/Next.js (Web Admin) | Giao diện đặt chỗ cho đại lý (App) và quản trị sàn (Web). |
-| **Security Gateway** | Cloudflare WAF + SSL/TLS 1.3 | Chặn DDoS, Injection, cấp HTTPS miễn phí. |
-| **Load Balancer** | Nginx (Reverse Proxy) | Phân phối tải đều vào cụm Web API Server. |
-| **Application** | ASP.NET Core 8 (Stateless, Docker Container) | Xử lý logic nghiệp vụ: Booking, Wallet, KYC, Claims. |
-| **Cache & Lock** | Redis 7 (In-memory) | Cache dữ liệu, Distributed Lock, Idempotent Key. |
-| **Background Jobs** | Hangfire (Worker Service) | Tự động hủy đơn quá hạn, gọi API đối tác, gửi Push. |
+| **Client (Frontend)** | React Native (Mobile App), React/Next.js (Web Admin) | Giao diện đặt chỗ (App) và quản trị sàn (Web), tích hợp WebSocket SignalR Chat. |
+| **Security Gateway** | Cloudflare WAF + SSL/TLS 1.3 | Chặn DDoS, SQL Injection, cấu hình WebSocket SSL Proxy. |
+| **Load Balancer** | Nginx (Reverse Proxy) | Phân phối tải, cấu hình Upgrade/Connection headers để proxy WebSocket. |
+| **Application** | ASP.NET Core 8 (Stateless, Docker Container) | Xử lý logic nghiệp vụ: Booking, Wallet, KYC, Claims. Font MS hỗ trợ PDF. |
+| **Cache & Lock** | Redis 7 (In-memory) | Cache dữ liệu, Distributed Lock, Idempotent Key, SignalR Backplane. |
+| **Background Jobs** | Hangfire (Worker Service) | Tự động hủy đơn, xuất hóa đơn VAT điện tử, sync vé. |
 | **Push Notification** | Firebase Cloud Messaging (FCM) | Gửi thông báo đẩy tức thì về điện thoại đại lý. |
 | **Database** | PostgreSQL 16 (Master-Replica Replication) | Lưu trữ chính: tách biệt đọc/ghi để tối ưu hiệu năng. |
-| **File Storage** | AWS S3 / Google Cloud Storage | Lưu ảnh KYC, file PDF Voucher/Vé điện tử. |
-| **Monitoring** | Google Cloud Monitoring / Grafana | Giám sát CPU/RAM/Disk 24/7, cảnh báo qua Telegram. |
+| **File Storage** | AWS S3 / Google Cloud Storage | Lưu ảnh KYC, file PDF Voucher và file PDF báo giá Quotation. |
+| **AI LLM Engine** | Google Gemini API (SaaS) | Phân tích ngôn ngữ tự nhiên, gợi ý combo báo giá (NLP). |
+| **Monitoring** | Grafana + Prometheus | Giám sát CPU/RAM/Disk 24/7, cảnh báo qua Telegram. |
 | **Container Runtime** | Docker + Docker Compose | Đóng gói và triển khai toàn bộ hệ thống bằng 1 lệnh. |

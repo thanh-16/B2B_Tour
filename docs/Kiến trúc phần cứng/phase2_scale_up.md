@@ -30,9 +30,9 @@ graph TD
     %% ────────────────────────────────────────
     %% TẦNG BẢO VỆ
     %% ────────────────────────────────────────
-    App -->|HTTPS| WAF["🛡️ Cloudflare Pro - WAF + DDoS"]
+    App -->|HTTPS & WebSocket| WAF["🛡️ Cloudflare Pro - WAF + DDoS"]
     Web -->|HTTPS| WAF
-    WAF -->|Clean Traffic| LB["⚖️ Nginx Load Balancer"]
+    WAF -->|Clean Traffic - WebSocket Proxy| LB["⚖️ Nginx Load Balancer"]
 
     %% ────────────────────────────────────────
     %% CỤM WEB API (Horizontal Scaling)
@@ -41,22 +41,23 @@ graph TD
         API1["API Server 1 - ASP.NET Core"]
         API2["API Server 2 - ASP.NET Core"]
     end
-    LB -->|Round Robin| API1
-    LB -->|Round Robin| API2
+    LB -->|Round Robin - HTTP & WS| API1
+    LB -->|Round Robin - HTTP & WS| API2
 
     %% ────────────────────────────────────────
     %% DỊCH VỤ BỔ TRỢ (Tách riêng máy chủ)
     %% ────────────────────────────────────────
     subgraph SupportLayer["⚡ Support Services"]
-        REDIS["⚡ Redis Server"]
+        REDIS["⚡ Redis Server - Cache, Lock & SignalR Backplane"]
         HF["⏰ Hangfire Worker"]
         FCM["🔔 Firebase FCM"]
     end
-    API1 <-->|Session & Lock| REDIS
-    API2 <-->|Session & Lock| REDIS
+    API1 <-->|Session, Lock & WS Pub/Sub| REDIS
+    API2 <-->|Session, Lock & WS Pub/Sub| REDIS
     API1 -->|Enqueue Jobs| HF
     API2 -->|Enqueue Jobs| HF
     API1 -->|Push| FCM
+    API2 -->|Push| FCM
     FCM -->|Notification| App
     HF -->|Retry API Calls| PARTNER
 
@@ -75,18 +76,23 @@ graph TD
     HF -->|Job Store| DB_M
 
     %% ────────────────────────────────────────
-    %% LƯU TRỮ & ĐỐI TÁC
+    %% LƯU TRỮ & ĐỐI TÁC & SAAS
     %% ────────────────────────────────────────
     STORAGE["📁 Object Storage - S3 / GCS"]
-    API1 -->|File Upload/Download| STORAGE
-    API2 -->|File Upload/Download| STORAGE
+    API1 -->|Voucher, Quotation Upload| STORAGE
+    API2 -->|Voucher, Quotation Upload| STORAGE
 
-    subgraph External["🔌 External Partners"]
+    subgraph External["🔌 External Partners & SaaS"]
         VNPAY["💳 VNPay Production"]
+        CASSO["🏦 Casso / PayOS Webhook"]
         PARTNER["🚌 Partner APIs"]
+        GEMINI["🤖 Google Gemini API (LLM SaaS)"]
     end
     API1 <-->|Payment| VNPAY
     API2 <-->|Payment| VNPAY
+    API1 <-->|VietQR Bank Webhook| CASSO
+    API2 <-->|VietQR Bank Webhook| CASSO
+    API1 & API2 -->|Function Calling & NLP| GEMINI
 
     %% ────────────────────────────────────────
     %% GIÁM SÁT
@@ -112,7 +118,9 @@ Bảng dưới đây thể hiện rõ từng thành phần đã được nâng c
 | **Redis** | Chạy chung VPS | **Redis Server riêng** (hoặc Managed Redis) | Đảm bảo RAM dành riêng cho cache và lock, không bị PostgreSQL hoặc API tranh chấp. |
 | **WAF / Bảo mật** | Cloudflare Free (cơ bản) | **Cloudflare Pro** (WAF Rules nâng cao, Rate Limit chi tiết) | Bảo vệ chuyên sâu hơn khi hệ thống có nhiều đại lý và dòng tiền lớn hơn. |
 | **Monitoring** | Không có (kiểm tra thủ công) | **Grafana + Prometheus** (Dashboard giám sát 24/7) | Phát hiện CPU/RAM quá tải, API chậm, DB nghẽn và gửi cảnh báo Telegram tự động. |
-| **Object Storage** | Cloudinary Free (25 GB) | **AWS S3 / Google Cloud Storage** (không giới hạn) | Cloudinary Free Tier không đủ dung lượng khi có hàng trăm đại lý upload ảnh KYC + Voucher PDF hàng ngày. |
+| **Object Storage** | Cloudinary Free (25 GB) | **AWS S3 / Google Cloud Storage** (không giới hạn) | Cloudinary Free Tier không đủ dung lượng khi có hàng trăm đại lý upload ảnh KYC + Voucher + Báo giá PDF hàng ngày. |
+| **WebSocket Chat** | Không có | **SignalR Multi-Server + Redis Backplane** | WebSocket duy trì trạng thái. Khi scale horizontal ra nhiều server, bắt buộc dùng Redis Backplane để đồng bộ tin nhắn giữa các cụm. |
+| **VietQR Webhook** | Không có (chỉ có VNPay) | **VietQR Auto-Credit via Casso Webhook** | Nạp tiền ví tự động bằng QR động (Dynamic QR) qua bank chuyển khoản với phí 0%. |
 
 ---
 
@@ -124,12 +132,13 @@ Bảng dưới đây thể hiện rõ từng thành phần đã được nâng c
 | 2 | **Web API Server 1** | 2 vCPU, 8 GB RAM | ~400.000 VNĐ | Xử lý logic nghiệp vụ (Stateless). |
 | 3 | **Web API Server 2** | 2 vCPU, 8 GB RAM | ~400.000 VNĐ | Bản sao API Server 1, đảm bảo High Availability. |
 | 4 | **Hangfire Worker** | 2 vCPU, 4 GB RAM | ~250.000 VNĐ | Xử lý tác vụ nền: hủy đơn, gọi API đối tác, gửi Push. |
-| 5 | **Redis Server** | 2 GB RAM (Dedicated) | ~150.000 VNĐ | Cache & Distributed Lock (tách riêng để đảm bảo hiệu năng). |
-| 6 | **PostgreSQL Master** | 2 vCPU, 8 GB RAM, SSD 100 GB | ~500.000 VNĐ | CSDL chính ghi dữ liệu (Wallet, Booking, Ledger). |
-| 7 | **PostgreSQL Replica** | 2 vCPU, 8 GB RAM, SSD 100 GB | ~500.000 VNĐ | Bản sao đọc cho tìm kiếm, báo cáo, xuất Excel. |
-| 8 | **Object Storage (S3)** | 50 GB+ (Pay-as-you-go) | ~50.000 VNĐ | Ảnh KYC, PDF Voucher. |
-| 9 | **Cloudflare Pro** | SaaS | ~500.000 VNĐ | WAF nâng cao, Rate Limit, Analytics. |
-| 10 | **Monitoring (Grafana)** | Chạy Docker trên VPS LB | 0 VNĐ (Self-hosted) | Dashboard giám sát + cảnh báo Telegram. |
+| 5 | **Redis Server** | 2 GB RAM (Dedicated) | ~150.000 VNĐ | Cache, Distributed Lock & SignalR Backplane đồng bộ chat WebSocket. |
+| 6 | **PostgreSQL Master** | 2 vCPU, 8 GB RAM, SSD 100 GB | ~500.000 VNĐ | CSDL chính ghi dữ liệu (Wallet, Booking, Ledger, Chat, Review). |
+| 7 | **PostgreSQL Replica** | 2 vCPU, 8 GB RAM, SSD 100 GB | ~500.000 VNĐ | Bản sao đọc cho tìm kiếm, báo cáo, xuất Excel, hiển thị đánh giá. |
+| 8 | **Object Storage (S3)** | 50 GB+ (Pay-as-you-go) | ~50.000 VNĐ | Ảnh KYC, PDF Voucher, PDF Báo giá. |
+| 9 | **Cloudflare Pro** | SaaS | ~500.000 VNĐ | WAF nâng cao, Rate Limit, WebSocket Proxy, Analytics. |
+| 10 | **Google Gemini API** | SaaS | Tùy token sử dụng | LLM phân tích NLP và gợi ý combo du lịch. |
+| 11 | **Monitoring (Grafana)** | Chạy Docker trên VPS LB | 0 VNĐ (Self-hosted) | Dashboard giám sát + cảnh báo Telegram. |
 | | **Tổng chi phí ước tính** | | **~2.850.000 VNĐ/tháng** | |
 
 ---
@@ -153,6 +162,15 @@ Bảng dưới đây thể hiện rõ từng thành phần đã được nâng c
     *   Database Replication Lag > 5 giây.
     *   Disk usage > 85%.
     *   Hangfire Job bị thất bại > 3 lần liên tiếp.
+
+### 4.4 Cơ Thế Đồng Bộ WebSocket Chat Xuyên Suốt Cụm (SignalR Redis Backplane)
+*   Do cụm API hoạt động sau Load Balancer, các client sẽ kết nối vào các server khác nhau.
+*   Hạ tầng sử dụng **Redis Pub/Sub** làm SignalR Backplane. Khi API Server 1 nhận message chat từ Client A gửi tới Client B, API Server 1 sẽ đóng gói và publish tin nhắn này lên Redis.
+*   API Server 2 subcribe kênh Redis, nhận message và chuyển tiếp trực tiếp xuống kết nối WebSocket đang hoạt động của Client B. Điều này triệt tiêu hoàn toàn rủi ro mất tin nhắn chat thời gian thực do lệch server kết nối.
+
+### 4.5 Phòng chống Tấn công Spam LLM API và Giữ Chỗ Ảo
+*   **Rate Limiting ở WAF & Redis:** Cấu hình Cloudflare WAF giới hạn tần suất truy cập API `/api/ai/chat` (tối đa 10 request/phút từ 1 IP/Account) nhằm chống lại các cuộc tấn công DDoS tiêu hao token và chi phí Gemini API của doanh nghiệp.
+*   **Chống Khóa Kho Ảo (Anti-Spam Hold):** Áp dụng thiết kế UI-driven, trợ lý AI không thể tự gọi API giữ chỗ (`/bookings/hold`). AI chỉ đề xuất thông tin combo và sinh payload. Người dùng bắt buộc phải chuyển sang màn hình UI xác nhận, nhấn nút đặt thủ công để kích hoạt. Cơ chế này loại bỏ hoàn toàn khả năng chatbot tự động khóa hàng loạt slot kho của Supplier.
 
 ---
 
