@@ -127,22 +127,23 @@ graph LR
 | 3 | Quản lý nhân viên | Staff | Thêm mới tài khoản Staff, Khóa/Mở khóa tài khoản nhân viên |
 | 4 | Tìm kiếm dịch vụ | Search | Tìm kiếm dịch vụ sỉ (giá đã cộng markup) |
 | 5 | Cấu hình markup | Search | Cập nhật tỷ lệ markup (phí dịch vụ) cho đại lý |
-| 6 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
-| 7 | Hủy đơn chủ động | Booking | Hủy đơn đang HELD chủ động trước khi hết 15 phút để hoàn slot kho |
-| 8 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
-| 9 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
-| 10 | Xem lịch sử ví | Wallet | Xem lịch sử các giao dịch nạp/trừ ví chi tiết (Ledger) |
-| 11 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
-| 12 | Tải E-Voucher | Voucher | Tải E-Voucher / Vé điện tử (PDF) về máy |
-| 13 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
-| 14 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
-| 15 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và đặt giữ chỗ tự động |
-| 16 | Giỏ hàng Combo (Phase 2) | Cart | Thêm/Xóa/Xem giỏ hàng, Hold và thanh toán combo 1 chạm (Atomic) |
-| 17 | Xem/Tải hóa đơn VAT (Phase 2) | Invoice | Xem danh sách và tải file PDF hóa đơn VAT điện tử |
-| 18 | Quản lý CTV / Sub-Agent (Phase 2) | Sub-Agent | Tạo tài khoản CTV, cấu hình % hoa hồng, xem báo cáo hoa hồng |
-| 19 | Nạp ví VietQR (Phase 2) | Payment | Tạo VietQR biến động nạp ví tự động qua Bank Webhook (Phí 0%) |
-| 20 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Supplier về dịch vụ đơn hàng |
-| 21 | Gửi đánh giá (Phase 2) | Review | Gửi review rating từ 1-5 sao sau khi đơn hàng COMPLETED |
+| 6 | Xuất báo giá du lịch | Search | Xuất combo/dịch vụ dạng báo giá PDF/Excel (giá bán lẻ đã cộng markup) gửi khách hàng lẻ |
+| 7 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm thời, nhận mã PNR, đếm ngược 15 phút |
+| 8 | Hủy đơn chủ động | Booking | Hủy đơn đang HELD chủ động trước khi hết 15 phút để hoàn slot kho |
+| 9 | Thanh toán (Pay) | Booking | Thanh toán đơn hàng bằng ví đại lý → xuất voucher |
+| 10 | Xem số dư ví | Wallet | Xem số dư khả dụng, hạn mức tín dụng công nợ |
+| 11 | Xem lịch sử ví | Wallet | Xem lịch sử các giao dịch nạp/trừ ví chi tiết (Ledger) |
+| 12 | Nạp ví qua VNPay | Payment | Tạo URL thanh toán VNPay để nạp tiền vào ví |
+| 13 | Tải E-Voucher | Voucher | Tải E-Voucher / Vé điện tử (PDF) về máy |
+| 14 | Tạo khiếu nại | Claim | Gửi yêu cầu hoàn tiền, hủy vé, giải quyết tranh chấp |
+| 15 | Xem thông báo | Notification | Nhận và quản lý thông báo hệ thống |
+| 16 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và nhận link đặt chỗ |
+| 17 | Giỏ hàng Combo (Phase 2) | Cart | Thêm/Xóa/Xem giỏ hàng, Hold và thanh toán combo 1 chạm (Atomic) |
+| 18 | Xem/Tải hóa đơn VAT (Phase 2) | Invoice | Xem danh sách và tải file PDF hóa đơn VAT điện tử |
+| 19 | Quản lý CTV / Sub-Agent (Phase 2) | Sub-Agent | Tạo tài khoản CTV, cấu hình % hoa hồng, xem báo cáo hoa hồng |
+| 20 | Nạp ví VietQR (Phase 2) | Payment | Tạo VietQR biến động nạp ví tự động qua Bank Webhook (Phí 0%) |
+| 21 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Supplier về dịch vụ đơn hàng |
+| 22 | Gửi đánh giá (Phase 2) | Review | Gửi review rating từ 1-5 sao sau khi đơn hàng COMPLETED |
 
 ```mermaid
 graph LR
@@ -170,7 +171,7 @@ graph LR
 |---|-----------|--------|-------|
 | 1 | Đổi mật khẩu & Hồ sơ | Auth | Đổi mật khẩu, cập nhật thông tin cá nhân |
 | 2 | Tìm kiếm dịch vụ | Search | Tìm kiếm dịch vụ du lịch (giá đã cộng markup) |
-| 3 | Xem cấu hình markup | Search | Xem (chỉ đọc) tỷ lệ markup hiện tại |
+| 3 | Xuất báo giá du lịch | Search | Xuất combo/dịch vụ dạng báo giá PDF/Excel (giá bán lẻ đã cộng markup) gửi khách lẻ |
 | 4 | Giữ chỗ (Hold) | Booking | Giữ chỗ tạm, lock slot kho, đếm ngược 15 phút |
 | 5 | Hủy đơn chủ động | Booking | Hủy đơn đang HELD chủ động trước khi hết hạn |
 | 6 | Thanh toán (Pay) | Booking | Trừ ví đại lý để thanh toán đơn hàng |
@@ -180,7 +181,7 @@ graph LR
 | 10 | Tải E-Voucher | Voucher | Tải E-Voucher / Vé điện tử (PDF) về máy |
 | 11 | Tạo khiếu nại | Claim | Gửi yêu cầu khiếu nại dịch vụ |
 | 12 | Xem thông báo | Notification | Nhận thông báo hệ thống |
-| 13 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và đặt giữ chỗ tự động |
+| 13 | Trợ lý AI Báo Giá & Combo | AI Assistant | Chat NLP nhận đề xuất combo kèm giá + markup và nhận link đặt chỗ |
 | 14 | Giỏ hàng Combo (Phase 2) | Cart | Thêm/Xóa/Xem giỏ hàng, Hold và thanh toán combo 1 chạm (Atomic) |
 | 15 | Nạp ví VietQR (Phase 2) | Payment | Tạo VietQR biến động nạp ví tự động qua Bank Webhook (Phí 0%) |
 | 16 | Chat tức thời (Phase 2) | Chat | Chat WebSocket trực tiếp với Supplier về dịch vụ đơn hàng |
@@ -317,15 +318,15 @@ graph LR
 
 ### 3.8 🤖 Trợ Lý AI Báo Giá & Tạo Combo Tự Động (AI Travel Agent Assistant)
 
-**Vai trò:** Actor hệ thống (Phase 2). Trích xuất ý định của người dùng bằng ngôn ngữ tự nhiên, tích hợp API nội bộ để tính toán giá, markup và tạo combo đặt chỗ tự động.
+**Vai trò:** Actor hệ thống (Phase 1). Trích xuất ý định của người dùng bằng ngôn ngữ tự nhiên, tích hợp API nội bộ để tính toán giá, markup và tạo đề xuất combo đặt chỗ.
 
 **Chức năng:**
 
 | # | Chức năng | Trigger / Mô tả |
 |---|-----------|-----------------|
 | 1 | Phân tích yêu cầu combo | Nhận câu lệnh chatbot từ Agency Staff → Trích xuất điểm đi, điểm đến, ngày đi, ngân sách, số khách |
-| 2 | Báo giá & tạo combo tự động | Gọi API search nội bộ, tính toán giá sỉ + markup, đề xuất 3 combo tối ưu kèm nút Giữ chỗ |
-| 3 | Tự động giữ chỗ | Gọi API Hold Booking khi người dùng ấn nút chọn trên giao diện chat của AI |
+| 2 | Báo giá & tạo combo tự động | Gọi API search nội bộ, tính toán giá sỉ + markup, đề xuất 3 combo tối ưu kèm nút đặt combo |
+| 3 | Cung cấp link đặt chỗ | Tạo link / payload giữ chỗ cho App UI → Người dùng tự tay nhấn xác nhận đặt chỗ chứ AI không tự động giữ |
 
 ```mermaid
 graph LR
@@ -333,7 +334,7 @@ graph LR
 
     AI_AST --> UC_NLP["Phân tích ngôn ngữ tự nhiên (NLP)"]
     AI_AST --> UC_VAL["Gợi ý & báo giá Combo"]
-    AI_AST --> UC_AUTO_HOLD["Kích hoạt Giữ chỗ (Hold)"]
+    AI_AST --> UC_PROVIDE_LINK["Cung cấp link đặt (Không tự Hold)"]
 ```
 
 ---
@@ -455,11 +456,12 @@ sequenceDiagram
     API->>API: Tự động cộng tỷ lệ Markup (%) cấu hình của Đại lý
     API->>AI: Trả về kết quả thô đã cộng markup cho LLM
     AI-->>API: Trả về nội dung hội thoại tự nhiên định dạng JSON combo
-    API-->>Staff: Hiển thị 3 combo đề xuất kèm nút [Giữ Chỗ]
+    API-->>Staff: Hiển thị 3 combo đề xuất kèm nút [Đặt Combo]
 
-    Staff->>API: Nhấn nút [Giữ Chỗ] combo mong muốn
-    API->>API: Kích hoạt luồng Hold Booking cốt lõi (4.1)
-    API-->>Staff: Trả về mã PNR và giữ chỗ thành công
+    Staff->>API: Nhấn nút [Đặt Combo] combo mong muốn
+    API->>API: Chuyển hướng sang màn hình UI xác nhận giữ chỗ
+    Staff->>API: Xác nhận đặt chỗ → Gọi API Hold Booking (4.1)
+    API-->>Staff: Trả về mã PNR và giữ chỗ thành công (Chống spam tự động)
 ```
 
 ### 4.5 Luồng Giỏ Hàng Combo Đa Dịch Vụ (Shopping Cart - Phase 2)

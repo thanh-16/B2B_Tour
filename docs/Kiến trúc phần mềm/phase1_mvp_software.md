@@ -109,7 +109,14 @@ Features/
 │       ├── IAiModelService.cs
 │       └── AiModelService.cs           → Gọi trực tiếp Gemini API qua HttpClient
 │
-└── ... (tương tự cho Agencies, Inventory, Claims, Notifications, Vouchers)
+├── Inventory/
+│   ├── Commands/
+│   │   ├── ExportQuotationCommand.cs   → Xuất báo giá combo/dịch vụ dạng PDF/Excel
+│   │   └── ...
+│   └── Queries/
+│       └── SearchInventoryQuery.cs     → Tìm kiếm (Staff bị ẩn markup)
+│
+└── ... (tương tự cho Agencies, Claims, Notifications, Vouchers)
 ```
 
 ### 2.3 Infrastructure Layer — Kỹ Thuật Cài Đặt
@@ -139,7 +146,7 @@ Features/
 | `BookingController` | POST /hold, POST /{id}/pay, DELETE /{id}, GET /list | Manager, Staff |
 | `WalletController` | GET /balance, GET /history, POST /credit, POST /debit | Admin / Manager, Staff |
 | `PaymentController` | POST /vnpay/create-url, POST /vnpay/ipn | Manager, Staff / Public |
-| `InventoryController` | GET /search, POST /, PUT /{id}/slots, DELETE /{id} | Admin, Supplier |
+| `InventoryController` | GET /search, POST /, PUT /{id}/slots, DELETE /{id}, POST /export-quotation | Search: All (Staff ẩn markup) / Admin, Supplier / All (Báo giá) |
 | `VoucherController` | GET /{bookingId}/voucher, GET /{id}/download | Manager, Staff |
 | `ClaimController` | POST /, GET /list, PUT /{id}/resolve | Manager, Staff / Admin |
 | `NotificationController` | GET /list, PUT /{id}/read, PUT /read-all | All authenticated |
@@ -214,9 +221,10 @@ Features/
    c. HttpClient gọi Gemini API -> Gemini trả về yêu cầu gọi Function Calling
    d. Handler chặn lại, thực thi API Search nội bộ lấy danh sách phòng/vé sỉ
    e. Handler tính toán giá sỉ + tỉ lệ Markup (%) hiện tại của đại lý đó
-   f. Handler gửi lại kết quả dữ liệu thô cho Gemini để LLM sinh câu trả lời tự nhiên định dạng JSON đề xuất
-   g. Đề xuất hiển thị 3 combo kèm thông số và nút [Giữ Chỗ]
-3. Client nhấn nút [Giữ Chỗ] trên giao diện AI chat -> Gọi API Hold Booking (3.1)
+   f. Handler gửi lại kết quả dữ liệu thô đã cộng markup cho Gemini để LLM sinh câu trả lời tự nhiên định dạng JSON đề xuất
+   g. Đề xuất hiển thị 3 combo kèm thông số và nút [Đặt Combo]
+3. Client nhấn nút [Đặt Combo] trên giao diện AI chat -> App chuyển hướng sang màn hình UI Hold Booking để người dùng tự xác nhận -> Gọi API Hold Booking (3.1)
+* Lưu ý: AI không tự kích hoạt giữ chỗ trực tiếp để tránh tình trạng spam khóa kho (Hold) tự động.
 ```
 
 ---

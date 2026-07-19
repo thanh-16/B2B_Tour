@@ -8,7 +8,7 @@
 
 ## 📊 Tổng quan MVP
 
-*   **Tổng số Use Case MVP:** 48 UC (bao gồm 3 UC mới của Trợ lý AI)
+*   **Tổng số Use Case MVP:** 49 UC (bao gồm 3 UC mới của Trợ lý AI và 1 UC xuất báo giá mới)
 *   **Số Actor:** 8 (4 con người + 4 hệ thống/đối tác)
 *   **Số Module triển khai:** 13 / 15 module (thêm AI Assistant, trừ Invoicing & VAT và Shopping Cart chuyển sang Phase 2)
 
@@ -101,12 +101,13 @@ graph LR
         UC47["UC-47: Dashboard báo cáo"]
         UC49["UC-49: Xem giao dịch Ledger"]
         UC50["UC-50: Xuất báo cáo Excel"]
-        UC52["UC-52: Cấu hình hệ thống"]
+        UC52["UC-52: Cập nhật cấu hình hệ thống"]
 
         %% AI Assistant (Đưa từ Phase 2 về Phase 1)
         UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
         UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
-        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
+        UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI (Không tự Hold)"]
+        UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
     end
 
     %% ──────────────────────────────────────
@@ -148,10 +149,10 @@ graph LR
     AM --> UC58
     AM --> UC55
     AM --> UC56
+    AM --> UC83
 
     AS --> UC01
     AS --> UC13
-    AS --> UC14
     AS --> UC16
     AS --> UC17
     AS --> UC53
@@ -164,6 +165,7 @@ graph LR
     AS --> UC45
     AS --> UC55
     AS --> UC56
+    AS --> UC83
 
     SA --> UC01
     SA --> UC27
@@ -289,20 +291,23 @@ graph LR
         UC13["UC-13: Tìm kiếm dịch vụ"]
         UC14["UC-14: Xem Markup"]
         UC15["UC-15: Cập nhật Markup"]
+        UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
     end
 
     AS["👤 Agency Staff"] --> UC13
-    AS --> UC14
+    AS --> UC83
     AM["🏢 Agency Manager"] --> UC13
     AM --> UC14
     AM --> UC15
+    AM --> UC83
 ```
 
 | UC | Actor | Mô tả | Quy tắc nghiệp vụ |
 |---|---|---|---|
 | UC-13 | Agency Manager, Staff | Tìm kiếm dịch vụ du lịch (khách sạn, tour, vé xe/máy bay) theo điểm đến, ngày, số khách. Giá hiển thị = giá sỉ + Markup đại lý. | Chỉ hiển thị dịch vụ có slot > 0 và Status = Active |
-| UC-14 | Agency Manager, Staff | Xem tỷ lệ Markup hiện tại của đại lý mình | Staff chỉ xem (Read-Only) |
+| UC-14 | Agency Manager | Xem tỷ lệ Markup hiện tại của đại lý mình | **Agency Staff bị ẩn tính năng này** |
 | UC-15 | Agency Manager | Cập nhật tỷ lệ Markup (%) áp dụng cho tất cả dịch vụ hoặc theo loại dịch vụ | Thay đổi Markup chỉ ảnh hưởng đơn mới, không ảnh hưởng đơn đã Hold/Paid |
+| UC-83 | Agency Manager, Staff | Xuất thông tin combo/dịch vụ dạng báo giá PDF/Excel (giá bán lẻ đã cộng markup) gửi khách hàng lẻ | Tệp báo giá chứa thông tin liên hệ đại lý, hành trình, giá trọn gói lẻ, điều khoản |
 
 ---
 
@@ -572,14 +577,14 @@ graph LR
 
 ### Module: Trợ Lý AI Báo Giá & Tạo Combo (AI Assistant)
 
-> **Mục tiêu:** Tích hợp trực tiếp công nghệ LLM (Gemini API) để hỗ trợ Agency Staff chat, báo giá và tự động giữ chỗ (Hold Booking) từ giao diện chatbot.
+> **Mục tiêu:** Tích hợp trực tiếp công nghệ LLM (Gemini API) để hỗ trợ Agency Staff chat, nhận báo giá combo và lấy link đặt chỗ nhanh.
 
 ```mermaid
 graph LR
     subgraph AIAssistant["🤖 Trợ Lý AI Báo Giá & Tạo Combo"]
         UC80["UC-80: Nhập yêu cầu bằng ngôn ngữ tự nhiên"]
         UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
-        UC82["UC-82: Kích hoạt giữ chỗ từ chat của AI"]
+        UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI"]
     end
 
     AM["🏢 Agency Manager"] --> UC80
@@ -589,14 +594,14 @@ graph LR
     AS --> UC81
     AS --> UC82
     AI_AST["🤖 AI Assistant"] -.-> |"Phân tích & Tìm kiếm"| UC81
-    AI_AST -.-> |"Auto Hold API"| UC82
+    AI_AST -.-> |"Cung cấp link đặt"| UC82
 ```
 
 | UC | Actor | Mô tả | Quy tắc nghiệp vụ |
 |---|---|---|---|
 | UC-80 | Agency Manager, Staff | Nhập câu lệnh chatbot yêu cầu combo dịch vụ (Ví dụ: "Combo đi Đà Lạt 3N2Đ cho 2 người...") | Text-based chat UI trong App |
 | UC-81 | Agency Manager, Staff, AI Assistant | AI phân tích yêu cầu (NLP), tự động gọi API Search nội bộ, tính toán giá đã cộng markup và đề xuất 3 combo | Đề xuất hiển thị đầy đủ chi tiết, giá tiền đã cộng markup của chính đại lý đó |
-| UC-82 | Agency Manager, Staff, AI Assistant | Người dùng nhấn nút đặt trong ô chat AI, AI gọi API Hold Booking để giữ chỗ trực tiếp | Trigger luồng Hold Booking cốt lõi |
+| UC-82 | Agency Manager, Staff | Người dùng nhận link/nút bấm tạo đặt chỗ trong ô chat và tự tay nhấn nút để giữ chỗ | **Trợ lý AI không được tự kích hoạt giữ chỗ** để tránh spam tồn kho. Người dùng bắt buộc phải tự tay xác nhận đặt chỗ. |
 
 ---
 

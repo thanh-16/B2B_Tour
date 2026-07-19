@@ -10,7 +10,7 @@
 
 Để hội đồng dễ theo dõi và phản biện, sơ đồ Use Case của dự án được chia làm 2 phần theo đúng lộ trình phát triển:
 
-### 1.1 Sơ đồ Phase 1: MVP & Trợ lý AI (48 Use Cases)
+### 1.1 Sơ đồ Phase 1: MVP & Trợ lý AI (49 Use Cases)
 
 ```mermaid
 graph LR
@@ -101,14 +101,16 @@ graph LR
         %% AI Assistant
         UC80["UC-80: Nhập yêu cầu bằng chatbot (NLP)"]
         UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
-        UC82["UC-82: Kích hoạt giữ chỗ từ chat AI"]
+        UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI (Không tự Hold)"]
+        UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
     end
 
     %% CONNECTIONS
     PA --> UC10 & UC11 & UC12 & UC07 & UC08 & UC18 & UC23 & UC24 & UC36 & UC42 & UC43 & UC47 & UC49 & UC50 & UC52
-    AM --> UC04 & UC15 & UC57 & UC58 & UC80 & UC81 & UC82
-    AS --> UC80 & UC81 & UC82
-    AS & AM --> UC01 & UC13 & UC14 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56
+    AM --> UC04 & UC15 & UC57 & UC58 & UC80 & UC81 & UC82 & UC83
+    AM --> UC14
+    AS --> UC80 & UC81 & UC82 & UC83
+    AS & AM --> UC01 & UC13 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56
     SA --> UC01 & UC27 & UC28 & UC30 & UC31 & UC19 & UC20 & UC32 & UC33 & UC44 & UC55
     SYS --> UC21 & UC37
     VNPAY --> UC26
@@ -201,14 +203,15 @@ graph LR
 *   **UC-58:** Khóa/Mở khóa tài khoản nhân viên.
 
 ### Module 4: Tìm kiếm & Markup (Search & Markup)
-*   **UC-13:** Tìm kiếm dịch vụ du lịch.
-*   **UC-14:** Xem cấu hình tỷ lệ Markup của đại lý.
-*   **UC-15:** Cập nhật tỷ lệ Markup (Chỉ Agency Manager).
+*   **UC-13:** Tìm kiếm dịch vụ du lịch (giá sỉ + markup).
+*   **UC-14:** Xem cấu hình tỷ lệ Markup của đại lý (Chỉ dành cho Agency Manager - Staff bị ẩn).
+*   **UC-15:** Cập nhật tỷ lệ Markup (Chỉ dành cho Agency Manager).
+*   **UC-83:** Xuất báo giá du lịch (Export Quotation) - dành cho cả Manager và Staff.
 
 ### Module 5: Trợ Lý AI Báo Giá (AI Assistant - Phase 1)
 *   **UC-80:** Nhập yêu cầu bằng chatbot ngôn ngữ tự nhiên (NLP).
 *   **UC-81:** Nhận đề xuất combo kèm báo giá tự động đã tính markup.
-*   **UC-82:** Kích hoạt giữ chỗ (Hold Booking) trực tiếp từ ô chat AI.
+*   **UC-82:** Nhận link đặt giữ chỗ từ chat AI (Không tự động kích hoạt giữ chỗ).
 
 ### Module 6: Động Cơ Đặt Chỗ (Booking Engine)
 *   **UC-16:** Đặt giữ chỗ tạm thời (Hold PNR) - đếm ngược 15 phút.
@@ -304,8 +307,8 @@ Bảng phân phối quyền hạn kích hoạt và tương tác của các tác 
 | **Auth (01-03, 55, 56)** | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | **KYC (04, 07-12)** | ✅ Duyệt | 📝 Nộp | — | — | ⏰ Suspend | — | — |
 | **Staff (57, 58)** | — | ✅ | — | — | — | — | — |
-| **Search/Markup (13-15)**| — | ✅ R/W | ✅ R | — | — | — | 🤖 Gợi ý |
-| **Booking (16-21, 53)** | 👁 Xem | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Duyệt | ⏰ Hủy | — | 🤖 Auto Hold|
+| **Search/Markup (13-15, 83)**| — | ✅ R/W/Export | ✅ R/Export (Ẩn UC14) | — | — | — | 🤖 Gợi ý |
+| **Booking (16-21, 53)** | 👁 Xem | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Duyệt | ⏰ Hủy | — | 🤖 Link đặt |
 | **Wallet (22-24, 54)** | ✅ Credit | 👁 Xem | 👁 Xem | — | — | — | — |
 | **Payment (25, 26, 71, 72)**| — | ✅ | ✅ | — | — | 📩 Webhook | — |
 | **Inventory (27-31)** | ✅ | — | — | ✅ | — | — | — |
