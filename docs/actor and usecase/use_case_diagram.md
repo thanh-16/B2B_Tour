@@ -1,479 +1,323 @@
-# 📊 Use Case Diagram — B2B Travel Platform
+# 📊 Bản Đồ Use Case Toàn Diện — B2B Travel Platform
 
-> Sơ đồ Use Case tổng quan cho hệ thống B2B Travel Platform, dựa trên phân tích mã nguồn thực tế.
+> Tài liệu tổng hợp toàn bộ sơ đồ và danh sách Use Case của dự án B2B Travel Platform, bao gồm cả Giai đoạn 1 (MVP) và Giai đoạn 2 (Scale-up).
+>
+> **Tổng quy mô dự án:** 68 Use Cases | 17 Modules | 8 Actors
 
 ---
 
-## Sơ đồ tổng quan
+## 🗺️ 1. Sơ Đồ Use Case Tổng Quan
+
+Để hội đồng dễ theo dõi và phản biện, sơ đồ Use Case của dự án được chia làm 2 phần theo đúng lộ trình phát triển:
+
+### 1.1 Sơ đồ Phase 1: MVP & Trợ lý AI (48 Use Cases)
 
 ```mermaid
 graph LR
-    %% ──────────────────────────────────────────────────────────
-    %% ĐỊNH NGHĨA ACTORS (TÁC NHÂN TỰ DO ĐỂ TỰ ĐỘNG CĂN BIÊN 2 BÊN)
-    %% ──────────────────────────────────────────────────────────
+    %% ACTORS
     PA["🔑 Platform Admin"]
     AM["🏢 Agency Manager"]
     AS["👤 Agency Staff"]
-
     SA["📦 Supplier Admin"]
     EXT["🚌 External Transport"]
     SYS["⏰ System / Hangfire"]
     VNPAY["💳 VNPay Gateway"]
+    AI_AST["🤖 AI Assistant"]
 
-    %% ──────────────────────────────────────────────────────────
-    %% RANH GIỚI HỆ THỐNG & CÁC USE CASE (KHÔNG SUBGRAPH CON ĐỂ GIẢM CHÉO DÂY)
-    %% ──────────────────────────────────────────────────────────
-    subgraph B2B_System["🏗 RANH GIỚI HỆ THỐNG B2B TRAVEL PLATFORM"]
-        %% 1. Xác thực & KYC đại lý
-        UC_Login["UC-01: Đăng nhập & Cấp Token"]
-        UC_Register["UC-04: Đăng ký đại lý mới"]
-        UC_KYC_Approve["UC-10: Phê duyệt KYC đại lý"]
-        UC_KYC_Reject["UC-11: Từ chối KYC đại lý"]
-        UC_Suspend["UC-12: Đình chỉ đại lý vi phạm"]
+    subgraph B2B_MVP["🏗 B2B TRAVEL PLATFORM — PHASE 1 MVP"]
+        %% Auth & Profile
+        UC01["UC-01: Đăng nhập & Cấp Token"]
+        UC02["UC-02: Refresh Token"]
+        UC03["UC-03: Thu hồi Token (Logout)"]
+        UC04["UC-04: Đăng ký Đại lý mới"]
+        UC55["UC-55: Đổi mật khẩu"]
+        UC56["UC-56: Cập nhật hồ sơ cá nhân"]
 
-        %% 2. Tìm kiếm & Cấu hình Markup
-        UC_Search["UC-13: Tìm kiếm dịch vụ sỉ"]
-        UC_Markup_View["UC-14: Xem Markup đại lý"]
-        UC_Markup_Update["UC-15: Cập nhật tỷ lệ Markup"]
-
-        %% 3. Đặt chỗ (Booking Engine)
-        UC_Hold["UC-16: Giữ chỗ tạm thời (Hold PNR)"]
-        UC_Pay["UC-17: Thanh toán đơn bằng ví (Pay)"]
-        UC_View_Book["UC-18: Xem tất cả đơn đặt chỗ"]
-        UC_Approve_Req["UC-19/20: Duyệt/Từ chối đơn On-Request"]
-        UC_Autocancel["UC-21: Tự động hủy đơn HELD quá hạn"]
-
-        %% 4. Ví tài chính & Thanh toán
-        UC_Wallet_View["UC-22: Xem số dư ví & Hạn mức"]
-        UC_Adj_Wallet["UC-23/24: Nạp/Trừ số dư ví thủ công"]
-        UC_VNPay_Url["UC-25: Tạo link nạp ví VNPay"]
-        UC_VNPay_IPN["UC-26: Xử lý IPN Callback nạp tiền"]
-
-        %% 5. Quản lý Kho dịch vụ
-        UC_Inv_View["UC-27: Xem danh sách dịch vụ sỉ"]
-        UC_Inv_Create["UC-28: Tạo sản phẩm dịch vụ mới"]
-        UC_Inv_Update["UC-30: Cập nhật slot chỗ trống/giá"]
-        UC_Inv_Stop["UC-31: Ngừng bán sản phẩm dịch vụ"]
-
-        %% 6. Voucher & Tích hợp vận chuyển đối tác
-        UC_Vou_Issue["UC-36: Phát hành E-Voucher / Vé"]
-        UC_Vou_Sync["UC-37: Gọi API đặt chỗ sang đối tác"]
-        UC_Vou_Download["UC-38: Tải vé & Tự check-in"]
-
-        %% 7. Khiếu nại (Claims)
-        UC_Claim_Create["UC-39: Tạo yêu cầu khiếu nại hoàn/hủy"]
-        UC_Claim_Resolve["UC-42/43: Duyệt/Từ chối khiếu nại"]
-
-        %% 8. Báo cáo & Cấu hình sàn
-        UC_Rep_Dash["UC-47: Xem Dashboard báo cáo doanh thu"]
-        UC_Rep_Ledger["UC-49: Xem lịch sử giao dịch Ledger"]
-        UC_Sys_Config["UC-52: Cập nhật cấu hình toàn sàn"]
-
-        %% 9. Hệ thống Thông báo
-        UC_Noti_View["UC-44: Xem danh sách thông báo"]
-        UC_Noti_Read["UC-45/46: Đánh dấu thông báo đã đọc"]
-    end
-
-    %% ──────────────────────────────────────────────────────────
-    %% ĐƯỜNG KẾT NỐI (RELATIONSHIPS)
-    %% ──────────────────────────────────────────────────────────
-
-    %% 1. Tác nhân nội bộ (Đặt ở bên trái sơ đồ)
-    PA --> UC_KYC_Approve
-    PA --> UC_KYC_Reject
-    PA --> UC_Suspend
-    PA --> UC_View_Book
-    PA --> UC_Adj_Wallet
-    PA --> UC_Inv_View
-    PA --> UC_Vou_Issue
-    PA --> UC_Claim_Resolve
-    PA --> UC_Rep_Dash
-    PA --> UC_Rep_Ledger
-    PA --> UC_Sys_Config
-    PA --> UC_Login
-    PA --> UC_Noti_View
-    PA --> UC_Noti_Read
-
-    AM --> UC_Register
-    AM --> UC_Markup_Update
-    AM --> UC_Search
-    AM --> UC_Markup_View
-    AM --> UC_Hold
-    AM --> UC_Pay
-    AM --> UC_Wallet_View
-    AM --> UC_VNPay_Url
-    AM --> UC_Vou_Download
-    AM --> UC_Claim_Create
-    AM --> UC_Login
-    AM --> UC_Noti_View
-    AM --> UC_Noti_Read
-
-    AS --> UC_Search
-    AS --> UC_Markup_View
-    AS --> UC_Hold
-    AS --> UC_Pay
-    AS --> UC_Wallet_View
-    AS --> UC_VNPay_Url
-    AS --> UC_Vou_Download
-    AS --> UC_Claim_Create
-    AS --> UC_Login
-    AS --> UC_Noti_View
-    AS --> UC_Noti_Read
-
-    %% 2. Tác nhân ngoài & Hệ thống (Đặt ở bên phải sơ đồ)
-    SA --> UC_Inv_View
-    SA --> UC_Inv_Create
-    SA --> UC_Inv_Update
-    SA --> UC_Inv_Stop
-    SA --> UC_Approve_Req
-    SA --> UC_Login
-    SA --> UC_Noti_View
-    SA --> UC_Noti_Read
-
-    SYS --> UC_Autocancel
-    SYS --> UC_Vou_Sync
-
-    VNPAY --> UC_VNPay_IPN
-
-    EXT --> UC_Vou_Sync
-    EXT --> UC_Vou_Download
-```
-
----
-
-## 1. Module: Xác thực & Quản lý người dùng (Auth)
-
-```mermaid
-graph LR
-    subgraph UC_Auth["🔐 Xác thực & Quản lý người dùng"]
-        UC1["UC-01: Đăng nhập hệ thống"]
-        UC2["UC-02: Refresh Token"]
-        UC3["UC-03: Thu hồi Token"]
-        UC4["UC-04: Đăng ký Đại lý mới"]
-        UC5["UC-05: Duyệt KYC Đại lý"]
-    end
-
-    PA["🔑 Platform Admin"] --> UC5
-    AM["🏢 Agency Manager"] --> UC4
-
-    ALL["👥 Mọi Actor"] --> UC1
-    ALL --> UC2
-    ALL --> UC3
-```
-
-| Use Case | Actor chính | Mô tả |
-|----------|------------|-------|
-| UC-01 | Tất cả | Đăng nhập bằng username/password, nhận JWT Token |
-| UC-02 | Tất cả | Gia hạn access token bằng refresh token |
-| UC-03 | Tất cả | Thu hồi refresh token (đăng xuất) |
-| UC-04 | Agency Manager | Đăng ký đại lý mới vào hệ thống (chờ KYC) |
-| UC-05 | Platform Admin | Duyệt / Từ chối KYC của đại lý |
-
----
-
-## 2. Module: KYC & Quản lý Đại lý (KYC)
-
-```mermaid
-graph LR
-    subgraph UC_KYC["📋 KYC & Quản lý Đại lý"]
-        UC7["UC-07: Xem danh sách Đại lý"]
-        UC8["UC-08: Xem Đại lý chờ KYC"]
-        UC9["UC-09: Xem chi tiết Đại lý"]
+        %% KYC
+        UC07["UC-07: Xem danh sách Đại lý"]
+        UC08["UC-08: Xem Đại lý chờ KYC"]
         UC10["UC-10: Duyệt KYC"]
         UC11["UC-11: Từ chối KYC"]
         UC12["UC-12: Đình chỉ Đại lý"]
-    end
 
-    PA["🔑 Platform Admin"] --> UC7
-    PA --> UC8
-    PA --> UC9
-    PA --> UC10
-    PA --> UC11
-    PA --> UC12
-```
+        %% Staff Management
+        UC57["UC-57: Thêm nhân viên đại lý"]
+        UC58["UC-58: Khóa/Mở khóa nhân viên"]
 
-| Use Case | Mô tả |
-|----------|-------|
-| UC-07 | Xem toàn bộ đại lý trên hệ thống |
-| UC-08 | Lọc đại lý đang chờ xét duyệt KYC (phân trang) |
-| UC-09 | Xem chi tiết thông tin 1 đại lý cụ thể |
-| UC-10 | Phê duyệt KYC → đại lý được phép giao dịch |
-| UC-11 | Từ chối KYC → đại lý phải bổ sung hồ sơ |
-| UC-12 | Đình chỉ hoạt động đại lý vi phạm |
-
----
-
-## 3. Module: Tìm kiếm & Markup (Search)
-
-```mermaid
-graph LR
-    subgraph UC_Search["🔍 Tìm kiếm & Cấu hình Markup"]
+        %% Search & Markup
         UC13["UC-13: Tìm kiếm dịch vụ"]
-        UC14["UC-14: Xem cấu hình Markup"]
+        UC14["UC-14: Xem Markup"]
         UC15["UC-15: Cập nhật Markup"]
-    end
 
-    AS["👤 Agency Staff"] --> UC13
-    AS --> UC14
-    AM["🏢 Agency Manager"] --> UC13
-    AM --> UC14
-    AM --> UC15
-```
-
-| Use Case | Actor | Mô tả |
-|----------|-------|-------|
-| UC-13 | Agency Staff/Manager | Tìm kiếm dịch vụ du lịch (khách sạn, tour, vé, v.v.) |
-| UC-14 | Agency Staff/Manager | Xem cấu hình markup (phí dịch vụ) hiện tại |
-| UC-15 | Agency Manager | Cập nhật tỷ lệ markup cho đại lý |
-
----
-
-## 4. Module: Đặt chỗ (Booking)
-
-```mermaid
-graph LR
-    subgraph UC_Booking["📝 Đặt chỗ"]
+        %% Booking Engine
         UC16["UC-16: Giữ chỗ (Hold)"]
-        UC17["UC-17: Thanh toán đặt chỗ (Pay)"]
-        UC18["UC-18: Xem tất cả đơn đặt chỗ"]
-        UC19["UC-19: Duyệt đơn đặt chỗ"]
-        UC20["UC-20: Từ chối đơn đặt chỗ"]
-        UC21["UC-21: Auto-cancel đơn quá hạn"]
-    end
+        UC17["UC-17: Thanh toán (Pay)"]
+        UC18["UC-18: Xem tất cả đơn"]
+        UC19["UC-19: Duyệt đơn On-Request"]
+        UC20["UC-20: Từ chối đơn On-Request"]
+        UC21["UC-21: Auto-cancel quá hạn"]
+        UC53["UC-53: Hủy đơn HELD chủ động"]
 
-    AS["👤 Agency Staff"] --> UC16
-    AS --> UC17
-    AM["🏢 Agency Manager"] --> UC16
-    AM --> UC17
-    PA["🔑 Platform Admin"] --> UC18
-    SA["📦 Supplier Admin"] --> UC19
-    SA --> UC20
-    SYS["⏰ Hangfire"] --> UC21
-
-    UC17 -.-> |"«include»"| UC_PAY["Trừ ví Đại lý"]
-    UC16 -.-> |"«include»"| UC_SLOT["Giảm Slot tồn kho"]
-```
-
-| Use Case | Actor | Mô tả |
-|----------|-------|-------|
-| UC-16 | Agency Staff/Manager | Giữ chỗ (HELD) — lock slot, reserve balance |
-| UC-17 | Agency Staff/Manager | Xác nhận thanh toán → trừ ví đại lý |
-| UC-18 | Platform Admin | Xem toàn bộ đơn trên hệ thống |
-| UC-19 | Supplier Admin | Duyệt đơn đặt chỗ cần xác nhận |
-| UC-20 | Supplier Admin | Từ chối đơn → hoàn tiền cho đại lý |
-| UC-21 | System (Hangfire) | Tự động hủy đơn HELD quá thời hạn |
-
----
-
-## 5. Module: Ví tài chính (Wallet)
-
-```mermaid
-graph LR
-    subgraph UC_Wallet["💰 Ví tài chính"]
+        %% Wallet
         UC22["UC-22: Xem số dư ví"]
-        UC23["UC-23: Nạp tiền vào ví (Credit)"]
+        UC23["UC-23: Nạp tiền ví (Credit)"]
         UC24["UC-24: Trừ tiền ví (Debit)"]
-    end
+        UC54["UC-54: Xem lịch sử giao dịch ví"]
 
-    AS["👤 Agency Staff"] --> UC22
-    AM["🏢 Agency Manager"] --> UC22
-    PA["🔑 Platform Admin"] --> UC23
-    PA --> UC24
-
-    UC23 -.-> |"«include»"| LEDGER["Tạo WalletLedger entry"]
-    UC24 -.-> |"«include»"| LEDGER
-```
-
-| Use Case | Actor | Mô tả |
-|----------|-------|-------|
-| UC-22 | Agency Staff/Manager | Xem số dư khả dụng, hạn mức tín dụng |
-| UC-23 | Platform Admin | Nạp tiền vào ví đại lý (phê duyệt nạp tiền) |
-| UC-24 | Platform Admin | Trừ tiền ví đại lý (điều chỉnh thủ công) |
-
----
-
-## 6. Module: Thanh toán (Payment — VNPay)
-
-```mermaid
-graph LR
-    subgraph UC_Payment["💳 Thanh toán VNPay"]
-        UC25["UC-25: Tạo URL thanh toán VNPay"]
+        %% Payment VNPay
+        UC25["UC-25: Tạo URL nạp ví VNPay"]
         UC26["UC-26: Xử lý IPN Callback"]
-    end
 
-    AS["👤 Agency Staff"] --> UC25
-    AM["🏢 Agency Manager"] --> UC25
-    VNPAY["💳 VNPay Gateway"] --> UC26
-
-    UC26 -.-> |"«include»"| CREDIT["Nạp ví Đại lý"]
-```
-
----
-
-## 7. Module: Kho dịch vụ (Inventory)
-
-```mermaid
-graph LR
-    subgraph UC_Inventory["📦 Kho dịch vụ"]
+        %% Inventory
         UC27["UC-27: Xem danh sách dịch vụ"]
         UC28["UC-28: Tạo dịch vụ mới"]
-        UC29["UC-29: Xem slot theo dịch vụ"]
-        UC30["UC-30: Cập nhật slot"]
+        UC30["UC-30: Cập nhật slot/giá"]
         UC31["UC-31: Ngừng bán dịch vụ"]
-    end
 
-    PA["🔑 Platform Admin"] --> UC27
-    PA --> UC28
-    PA --> UC29
-    PA --> UC30
-    PA --> UC31
-    SA["📦 Supplier Admin"] --> UC27
-    SA --> UC28
-    SA --> UC29
-    SA --> UC30
-    SA --> UC31
-```
-
-| Use Case | Mô tả |
-|----------|-------|
-| UC-27 | Xem danh sách dịch vụ của nhà cung cấp |
-| UC-28 | Tạo dịch vụ du lịch mới (tour, khách sạn, vé...) |
-| UC-29 | Xem slot/tồn kho theo khoảng thời gian |
-| UC-30 | Cập nhật số lượng, giá slot |
-| UC-31 | Dừng bán 1 dịch vụ |
-
----
-
-## 8. Module: Nhà cung cấp (Supplier)
-
-```mermaid
-graph LR
-    subgraph UC_Supplier["🏭 Quản lý Nhà cung cấp"]
-        UC32["UC-32: Xem Dashboard NCC"]
+        %% Supplier
+        UC32["UC-32: Dashboard NCC"]
         UC33["UC-33: Xem đơn chờ duyệt"]
-        UC34["UC-34: Duyệt đơn đặt chỗ"]
-        UC35["UC-35: Từ chối đơn đặt chỗ"]
-    end
 
-    SA["📦 Supplier Admin"] --> UC32
-    SA --> UC33
-    SA --> UC34
-    SA --> UC35
-```
+        %% Voucher
+        UC36["UC-36: Phát hành E-Voucher"]
+        UC37["UC-37: Gọi API đặt chỗ đối tác"]
+        UC38["UC-38: Tải E-Voucher"]
 
----
-
-## 9. Module: Voucher & Tích hợp vận chuyển
-
-```mermaid
-graph LR
-    subgraph UC_Voucher["🎫 Voucher & Tích hợp vận chuyển"]
-        UC36["UC-36: Phát hành E-Voucher / Vé điện tử"]
-        UC37["UC-37: Gửi thông tin đặt vé sang Nhà xe/Hãng bay"]
-        UC38["UC-38: Tải E-Voucher / Vé điện tử"]
-    end
-
-    PA["🔑 Platform Admin"] --> UC36
-    SYS["⏰ System / Hangfire"] --> UC37
-    AS["👤 Agency Staff"] --> UC38
-    AM["🏢 Agency Manager"] --> UC38
-```
-
-| Use Case | Actor | Mô tả |
-|----------|-------|-------|
-| UC-36 | Platform Admin | Phát hành E-Voucher / Vé điện tử sau khi đơn hàng được thanh toán |
-| UC-37 | System / Hangfire | Gọi API đồng bộ thông tin đặt chỗ với Nhà xe (vd: Phương Trang) hoặc Hãng bay |
-| UC-38 | Agency Staff/Manager | Tải E-Voucher / Vé điện tử để gửi cho khách hàng tự check-in |
-
----
-
-## 10. Module: Khiếu nại (Claim)
-
-```mermaid
-graph LR
-    subgraph UC_Claim["📢 Khiếu nại"]
+        %% Claim
         UC39["UC-39: Tạo khiếu nại"]
-        UC40["UC-40: Xem chi tiết khiếu nại"]
-        UC41["UC-41: Xem danh sách khiếu nại"]
         UC42["UC-42: Duyệt khiếu nại"]
         UC43["UC-43: Từ chối khiếu nại"]
-    end
 
-    AS["👤 Agency Staff"] --> UC39
-    AS --> UC40
-    AS --> UC41
-    AM["🏢 Agency Manager"] --> UC39
-    AM --> UC40
-    AM --> UC41
-    PA["🔑 Platform Admin"] --> UC42
-    PA --> UC43
-```
-
----
-
-## 11. Module: Thông báo (Notification)
-
-```mermaid
-graph LR
-    subgraph UC_Notify["🔔 Thông báo"]
+        %% Notification
         UC44["UC-44: Xem thông báo"]
         UC45["UC-45: Đánh dấu đã đọc"]
-        UC46["UC-46: Đánh dấu tất cả đã đọc"]
+
+        %% Report & Config
+        UC47["UC-47: Dashboard báo cáo"]
+        UC49["UC-49: Xem giao dịch Ledger"]
+        UC50["UC-50: Xuất báo cáo Excel"]
+        UC52["UC-52: Cập nhật cấu hình hệ thống"]
+
+        %% AI Assistant
+        UC80["UC-80: Nhập yêu cầu bằng chatbot (NLP)"]
+        UC81["UC-81: Nhận đề xuất combo kèm báo giá"]
+        UC82["UC-82: Kích hoạt giữ chỗ từ chat AI"]
     end
 
-    ALL["Tất cả User đã đăng nhập"] --> UC44
-    ALL --> UC45
-    ALL --> UC46
+    %% CONNECTIONS
+    PA --> UC10 & UC11 & UC12 & UC07 & UC08 & UC18 & UC23 & UC24 & UC36 & UC42 & UC43 & UC47 & UC49 & UC50 & UC52
+    AM --> UC04 & UC15 & UC57 & UC58 & UC80 & UC81 & UC82
+    AS --> UC80 & UC81 & UC82
+    AS & AM --> UC01 & UC13 & UC14 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56
+    SA --> UC01 & UC27 & UC28 & UC30 & UC31 & UC19 & UC20 & UC32 & UC33 & UC44 & UC55
+    SYS --> UC21 & UC37
+    VNPAY --> UC26
+    EXT --> UC37 & UC38
+    AI_AST --> UC81 & UC82
 ```
 
 ---
 
-## 12. Module: Báo cáo & Cấu hình hệ thống
+### 1.2 Sơ đồ Phase 2: Scale-Up & Nâng Cao (20 Use Cases)
 
 ```mermaid
 graph LR
-    subgraph UC_Report["📊 Báo cáo & Cấu hình"]
-        UC47["UC-47: Xem Dashboard tổng quan"]
-        UC48["UC-48: Xem báo cáo doanh thu"]
-        UC49["UC-49: Xem giao dịch ví"]
-        UC50["UC-50: Xuất báo cáo giao dịch"]
-        UC51["UC-51: Xem cấu hình hệ thống"]
-        UC52["UC-52: Cập nhật cấu hình hệ thống"]
+    %% ACTORS
+    PA["🔑 Platform Admin"]
+    AM["🏢 Agency Manager"]
+    AS["👤 Agency Staff"]
+    SA["📦 Supplier Admin"]
+    SYS["⏰ System / Hangfire"]
+    BANK["🏦 Bank Webhook"]
+
+    subgraph B2B_ScaleUp["📈 B2B TRAVEL PLATFORM — PHASE 2 SCALE-UP"]
+        %% Cart Combo
+        UC60["UC-60: Thêm dịch vụ vào giỏ combo"]
+        UC61["UC-61: Xóa dịch vụ khỏi giỏ combo"]
+        UC62["UC-62: Xem giỏ hàng combo"]
+        UC63["UC-63: Hold toàn bộ combo (Saga)"]
+        UC64["UC-64: Thanh toán combo 1 chạm"]
+
+        %% Invoice
+        UC65["UC-65: Tự động tạo hóa đơn VAT"]
+        UC66["UC-66: Xem danh sách hóa đơn VAT"]
+        UC67["UC-67: Tải hóa đơn VAT (PDF)"]
+
+        %% Sub-Agent
+        UC68["UC-68: Tạo tài khoản CTV"]
+        UC69["UC-69: Cấu hình hoa hồng CTV"]
+        UC70["UC-70: Xem báo cáo hoa hồng CTV"]
+
+        %% VietQR
+        UC71["UC-71: Tạo mã VietQR nạp ví"]
+        UC72["UC-72: Xử lý Bank Webhook auto-credit"]
+
+        %% Chat Hub
+        UC74["UC-74: Gửi tin nhắn chat tức thời"]
+        UC75["UC-75: Nhận tin nhắn chat tức thời"]
+        UC76["UC-76: Xem lịch sử chat theo Booking"]
+
+        %% Review & Rating
+        UC77["UC-77: Gửi đánh giá dịch vụ (COMPLETED)"]
+        UC78["UC-78: Xem danh sách đánh giá của Supplier"]
+        UC79["UC-79: Tự động tính rating trung bình"]
+
+        %% Notification
+        UC73["UC-73: Gửi cảnh báo qua Zalo/Telegram"]
     end
 
-    PA["🔑 Platform Admin"] --> UC47
-    PA --> UC48
-    PA --> UC49
-    PA --> UC50
-    PA --> UC51
-    PA --> UC52
+    %% CONNECTIONS
+    PA --> UC65 & UC66
+    AM --> UC68 & UC69 & UC70
+    AS & AM --> UC60 & UC61 & UC62 & UC63 & UC64 & UC67 & UC66 & UC71 & UC74 & UC75 & UC76 & UC77 & UC78
+    SA --> UC74 & UC75 & UC76 & UC78
+    SYS --> UC65 & UC79 & UC73
+    BANK --> UC72
 ```
 
 ---
 
-## 🎯 Ma trận Actor × Use Case tổng hợp
-
-| Module | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | External Transport | System |
-|--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| Auth (Đăng nhập/Token) | ✅ | ✅ | ✅ | ✅ | — | — |
-| KYC (Quản lý đại lý) | ✅ | — | — | — | — | — |
-| Search (Tìm kiếm) | — | ✅ | ✅ | — | — | — |
-| Booking (Đặt chỗ) | ✅ (xem all) | ✅ (hold/pay) | ✅ (hold/pay) | ✅ (duyệt/từ chối) | — | ✅ (auto-cancel) |
-| Wallet (Ví) | ✅ (credit/debit) | ✅ (xem) | ✅ (xem) | — | — | — |
-| Payment (VNPay) | — | ✅ | ✅ | — | — | ✅ (IPN) |
-| Inventory (Kho) | ✅ | — | — | ✅ | — | — |
-| Voucher & Vận chuyển | ✅ (phát hành) | ✅ (tải về) | ✅ (tải về) | — | 🚌 (nhận API) | ✅ (đồng bộ) |
-| Claim (Khiếu nại) | ✅ (duyệt) | ✅ (tạo) | ✅ (tạo) | — | — | — |
-| Report (Báo cáo) | ✅ | — | — | — | — | — |
-| Config (Hệ thống) | ✅ | — | — | — | — | — |
-| Notification | ✅ | ✅ | ✅ | ✅ | — | — |
+## 📝 2. Danh Sách Use Cases Chi Tiết Theo Module
 
 ---
 
-## 📌 Ghi chú
+### Module 1: Xác thực & Tài khoản (Auth & RBAC)
+*   **UC-01:** Đăng nhập & Cấu Token.
+*   **UC-02:** Gia hạn Token.
+*   **UC-03:** Đăng xuất.
+*   **UC-04:** Đăng ký Đại lý mới.
+*   **UC-55:** Đổi mật khẩu tài khoản.
+*   **UC-56:** Cập nhật thông tin hồ sơ cá nhân.
 
-- **Đường nét liền (→)**: Actor trực tiếp sử dụng Use Case
-- **Đường nét đứt (`«include»`)**: Use Case bao gồm use case phụ
-- **System / Hangfire**: Các tác vụ tự động chạy nền (auto-cancel đơn quá hạn, đồng bộ đặt vé đối tác, v.v.)
-- **VNPay Gateway**: Actor ngoài hệ thống — gọi IPN callback khi thanh toán hoàn tất
-- **External Transport**: Đối tác vận chuyển ngoại vi (Nhà xe như Phương Trang, Hãng máy bay) kết nối qua API tích hợp. Khách hàng tự chủ động di chuyển đến bến xe/sân bay và check-in với đối tác bằng E-Voucher/Vé điện tử. SYSTEM tự động gọi API đồng bộ thông tin đặt chỗ sau khi thanh toán.
+### Module 2: Quản lý KYC (KYC & Onboarding)
+*   **UC-07:** Xem danh sách Đại lý toàn sàn.
+*   **UC-08:** Xem danh sách Đại lý chờ duyệt KYC.
+*   **UC-10:** Phê duyệt KYC.
+*   **UC-11:** Từ chối KYC.
+*   **UC-12:** Đình chỉ hoạt động đại lý vi phạm.
+
+### Module 3: Quản lý Nhân Viên (Staff Management)
+*   **UC-57:** Thêm nhân viên đại lý mới.
+*   **UC-58:** Khóa/Mở khóa tài khoản nhân viên.
+
+### Module 4: Tìm kiếm & Markup (Search & Markup)
+*   **UC-13:** Tìm kiếm dịch vụ du lịch.
+*   **UC-14:** Xem cấu hình tỷ lệ Markup của đại lý.
+*   **UC-15:** Cập nhật tỷ lệ Markup (Chỉ Agency Manager).
+
+### Module 5: Trợ Lý AI Báo Giá (AI Assistant - Phase 1)
+*   **UC-80:** Nhập yêu cầu bằng chatbot ngôn ngữ tự nhiên (NLP).
+*   **UC-81:** Nhận đề xuất combo kèm báo giá tự động đã tính markup.
+*   **UC-82:** Kích hoạt giữ chỗ (Hold Booking) trực tiếp từ ô chat AI.
+
+### Module 6: Động Cơ Đặt Chỗ (Booking Engine)
+*   **UC-16:** Đặt giữ chỗ tạm thời (Hold PNR) - đếm ngược 15 phút.
+*   **UC-17:** Thanh toán đơn hàng (Pay) - trừ số dư ví đại lý.
+*   **UC-18:** Xem danh sách đơn đặt chỗ toàn sàn.
+*   **UC-19:** Duyệt đơn đặt chỗ On-Request.
+*   **UC-20:** Từ chối đơn đặt chỗ On-Request.
+*   **UC-21:** Auto-cancel đơn giữ chỗ quá hạn.
+*   **UC-53:** Hủy đơn hàng HELD chủ động trước khi hết 15 phút.
+
+### Module 7: Ví Tài Chính (Wallet & Payment)
+*   **UC-22:** Xem số dư ví đại lý và hạn mức tín dụng công nợ.
+*   **UC-23:** Nạp tiền vào ví đại lý (Platform Admin duyệt).
+*   **UC-24:** Trừ tiền ví đại lý (Platform Admin điều chỉnh).
+*   **UC-54:** Xem lịch sử giao dịch ví chi tiết (Ledger).
+
+### Module 8: Cổng Thanh Toán VNPay (Payment Gateway)
+*   **UC-25:** Tạo URL nạp tiền ví đại lý qua cổng VNPay.
+*   **UC-26:** Xử lý IPN Callback từ VNPay.
+
+### Module 9: Quản lý Kho Dịch Vụ (Inventory)
+*   **UC-27:** Xem danh sách dịch vụ của nhà cung cấp.
+*   **UC-28:** Đăng tải dịch vụ du lịch mới.
+*   **UC-30:** Cập nhật số lượng chỗ trống và giá sỉ theo từng ngày.
+*   **UC-31:** Ngừng bán dịch vụ du lịch.
+
+### Module 10: Extranet Nhà Cung Cấp (Supplier Extranet)
+*   **UC-32:** Xem dashboard thống kê đơn hàng và doanh thu của NCC.
+*   **UC-33:** Xem danh sách đơn On-Request chờ phê duyệt.
+
+### Module 11: Phát Hành Vé Điện Tử (Voucher & QR)
+*   **UC-36:** Tự động phát hành E-Voucher kèm mã QR Code sau khi PAID.
+*   **UC-37:** Gọi API đồng bộ đặt vé đối tác vận chuyển bên ngoài.
+*   **UC-38:** Tải E-Voucher / Vé điện tử (PDF).
+
+### Module 12: Khiếu Nại & Hậu Mãi (Claims)
+*   **UC-39:** Tạo yêu cầu khiếu nại.
+*   **UC-42:** Phê duyệt khiếu nại (Tự động hoàn tiền vào ví).
+*   **UC-43:** Từ chối yêu cầu khiếu nại.
+
+### Module 13: Thông Báo Hệ Thống (Notification)
+*   **UC-44:** Xem danh sách thông báo in-app.
+*   **UC-45:** Đánh dấu thông báo đã đọc.
+
+### Module 14: Báo Cáo & Cấu Hình Sàn (Reporting & Config)
+*   **UC-47:** Xem Dashboard báo cáo doanh thu.
+*   **UC-49:** Xem lịch sử Ledger giao dịch toàn sàn.
+*   **UC-50:** Xuất báo cáo giao dịch ví ra file Excel.
+*   **UC-52:** Cập nhật cấu hình hệ thống.
+
+### Module 15: Giỏ Hàng Combo (Shopping Cart - Phase 2)
+*   **UC-60:** Thêm dịch vụ vào giỏ hàng combo.
+*   **UC-61:** Xóa dịch vụ khỏi giỏ hàng combo.
+*   **UC-62:** Xem chi tiết giỏ hàng combo.
+*   **UC-63:** Unified Hold: Khóa đồng thời nhiều dịch vụ.
+*   **UC-64:** Thanh toán combo 1 chạm.
+
+### Module 16: Hóa Đơn Điện Tử (Invoicing & VAT - Phase 2)
+*   **UC-65:** Tự động tạo hóa đơn VAT điện tử qua API bên thứ ba.
+*   **UC-66:** Xem danh sách hóa đơn VAT đã phát hành.
+*   **UC-67:** Tải file PDF hóa đơn điện tử.
+
+### Module 17: Cộng Tác Viên (Sub-Agent / CTV - Phase 2)
+*   **UC-68:** Tạo tài khoản CTV trực thuộc đại lý.
+*   **UC-69:** Cấu hình tỷ lệ chia sẻ hoa hồng cho CTV.
+*   **UC-70:** Xem báo cáo doanh thu và hoa hồng của CTV.
+
+### Module 18: Nạp Ví VietQR (VietQR Payment - Phase 2)
+*   **UC-71:** Tạo mã VietQR biến động hiển thị số tiền nạp.
+*   **UC-72:** Xử lý Bank Webhook tự động cộng tiền ví (Phí 0%).
+
+### Module 19: Chat Thời Gian Thực (Real-time Chat - Phase 2)
+*   **UC-74:** Gửi tin nhắn text, hình ảnh đến đối tác.
+*   **UC-75:** Nhận tin nhắn chat đẩy tức thời qua SignalR.
+*   **UC-76:** Xem lại toàn bộ lịch sử tin nhắn chat theo BookingId.
+
+### Module 20: Đánh Giá & Phản Hồi (Review & Rating - Phase 2)
+*   **UC-77:** Gửi đánh giá dịch vụ khi đơn COMPLETED.
+*   **UC-78:** Xem danh sách đánh giá công khai của nhà cung cấp.
+*   **UC-79:** Tự động tính toán lại điểm rating trung bình của Supplier.
+
+### Module 21: Gửi Cảnh Báo Ngoài Sàn (Alert Notification - Phase 2)
+*   **UC-73:** Gửi thông báo tự động qua Zalo ZNS / Telegram Bot.
+
+---
+
+## 📊 3. Ma Trận Actor × Use Case (MVP + Scale-Up)
+
+Bảng phân phối quyền hạn kích hoạt và tương tác của các tác nhân đối với toàn bộ Use Case:
+
+| Use Case | Platform Admin | Agency Manager | Agency Staff | Supplier Admin | System | VNPay / Bank | AI Assistant |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Auth (01-03, 55, 56)** | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| **KYC (04, 07-12)** | ✅ Duyệt | 📝 Nộp | — | — | ⏰ Suspend | — | — |
+| **Staff (57, 58)** | — | ✅ | — | — | — | — | — |
+| **Search/Markup (13-15)**| — | ✅ R/W | ✅ R | — | — | — | 🤖 Gợi ý |
+| **Booking (16-21, 53)** | 👁 Xem | ✅ Hold/Pay | ✅ Hold/Pay | ✅ Duyệt | ⏰ Hủy | — | 🤖 Auto Hold|
+| **Wallet (22-24, 54)** | ✅ Credit | 👁 Xem | 👁 Xem | — | — | — | — |
+| **Payment (25, 26, 71, 72)**| — | ✅ | ✅ | — | — | 📩 Webhook | — |
+| **Inventory (27-31)** | ✅ | — | — | ✅ | — | — | — |
+| **Supplier (32, 33)** | — | — | — | ✅ | — | — | — |
+| **Voucher (36-38)** | ✅ Phát | 👁 Tải | 👁 Tải | — | ⏰ Sync | 🚌 API | — |
+| **Claim (39-43)** | ✅ Duyệt | ✅ Tạo | ✅ Tạo | — | — | — | — |
+| **Noti (44-46, 73)** | ✅ | ✅ | ✅ | ✅ | ⏰ Send | — | — |
+| **Report/Config (47-52)**| ✅ | — | — | — | — | — | — |
+| **Cart (60-64 - P2)** | — | ✅ | ✅ | — | — | — | — |
+| **Invoice (65-67 - P2)** | ✅ | 👁 Xem | — | — | ⏰ Auto | — | — |
+| **Sub-Agent (68-70 - P2)**| — | ✅ | — | — | — | — | — |
+| **Chat (74-76 - P2)** | — | ✅ R/W | ✅ R/W | ✅ R/W | — | — | — |
+| **Review (77-79 - P2)** | — | 📝 Gửi | 📝 Gửi | 👁 Xem | ⏰ Auto | — | — |
+
+**Chú thích:** ✅ Toàn quyền · 👁 Chỉ xem · 📝 Tạo/Gửi · ⏰ Tác vụ nền tự động · 📩 Webhook/Callback · 🤖 AI hỗ trợ · 🚌 API đối tác kết nối
