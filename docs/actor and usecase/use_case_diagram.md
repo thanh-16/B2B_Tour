@@ -104,14 +104,21 @@ graph LR
         UC82["UC-82: Nhận link đặt giữ chỗ từ chat AI (Không tự Hold)"]
         UC83["UC-83: Xuất báo giá du lịch (Export Quotation)"]
         UC84["UC-84: Quét QR check-in đón khách"]
+
+        %% Shopping Cart (Chuyển sang Phase 1)
+        UC60["UC-60: Thêm dịch vụ vào giỏ combo"]
+        UC61["UC-61: Xóa dịch vụ khỏi giỏ combo"]
+        UC62["UC-62: Xem giỏ hàng combo"]
+        UC63["UC-63: Hold toàn bộ combo (Saga)"]
+        UC64["UC-64: Thanh toán combo 1 chạm"]
     end
 
     %% CONNECTIONS
     PA --> UC10 & UC11 & UC12 & UC07 & UC08 & UC18 & UC23 & UC24 & UC36 & UC42 & UC43 & UC47 & UC49 & UC50 & UC52
-    AM --> UC04 & UC15 & UC57 & UC58 & UC80 & UC81 & UC82 & UC83
+    AM --> UC04 & UC15 & UC57 & UC58 & UC80 & UC81 & UC82 & UC83 & UC60 & UC61 & UC62 & UC63 & UC64
     AM --> UC14
-    AS --> UC80 & UC81 & UC82 & UC83
-    AS & AM --> UC01 & UC13 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56
+    AS --> UC80 & UC81 & UC82 & UC83 & UC60 & UC61 & UC62 & UC63 & UC64
+    AS & AM --> UC01 & UC13 & UC16 & UC17 & UC53 & UC22 & UC54 & UC25 & UC38 & UC39 & UC44 & UC45 & UC55 & UC56 & UC60 & UC61 & UC62 & UC63 & UC64
     SA --> UC01 & UC27 & UC28 & UC30 & UC31 & UC19 & UC20 & UC32 & UC33 & UC44 & UC55 & UC84
     SYS --> UC21 & UC37
     VNPAY --> UC26
@@ -134,13 +141,6 @@ graph LR
     BANK["🏦 Bank Webhook"]
 
     subgraph B2B_ScaleUp["📈 B2B TRAVEL PLATFORM — PHASE 2 SCALE-UP"]
-        %% Cart Combo
-        UC60["UC-60: Thêm dịch vụ vào giỏ combo"]
-        UC61["UC-61: Xóa dịch vụ khỏi giỏ combo"]
-        UC62["UC-62: Xem giỏ hàng combo"]
-        UC63["UC-63: Hold toàn bộ combo (Saga)"]
-        UC64["UC-64: Thanh toán combo 1 chạm"]
-
         %% Invoice
         UC65["UC-65: Tự động tạo hóa đơn VAT"]
         UC66["UC-66: Xem danh sách hóa đơn VAT"]
@@ -172,7 +172,7 @@ graph LR
     %% CONNECTIONS
     PA --> UC65 & UC66
     AM --> UC68 & UC69 & UC70
-    AS & AM --> UC60 & UC61 & UC62 & UC63 & UC64 & UC67 & UC66 & UC71 & UC74 & UC75 & UC76 & UC77 & UC78
+    AS & AM --> UC67 & UC66 & UC71 & UC74 & UC75 & UC76 & UC77 & UC78
     SA --> UC74 & UC75 & UC76 & UC78
     SYS --> UC65 & UC79 & UC73
     BANK --> UC72
