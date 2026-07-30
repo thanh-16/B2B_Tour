@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="Core/B2bTravel.Application/B2bTravel.Application.csproj" />
+    <Project Path="Core/B2bTravel.Domain/B2bTravel.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/B2bTravel.Infrastructure/B2bTravel.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Presentation/">
+    <Project Path="Presentation/B2bTravel.WebApi/B2bTravel.WebApi.csproj" />
+  </Folder>
+</Solution>
